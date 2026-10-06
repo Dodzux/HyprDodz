@@ -1,0 +1,63 @@
+[org/blueman/general]
+window-properties=[931, 1101, 0, 0]
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+cursor-size=20
+cursor-theme='{{ template "cursor_theme" . }}'
+font-antialiasing='grayscale'
+font-hinting='slight'
+font-name='CaskaydiaCove Nerd Font 11'
+font-rgba-order='rgb'
+gtk-theme='Graphite-Dark'
+icon-theme='Tela-circle-black-dark'
+text-scaling-factor=1.0
+toolbar-icons-size='large'
+toolbar-style='both-horiz'
+
+[org/gnome/desktop/sound]
+event-sounds=true
+input-feedback-sounds=false
+
+[org/gtk/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
+show-hidden=true
+show-size-column=true
+show-type-column=true
+sidebar-width=197
+sort-column='name'
+sort-directories-first=false
+sort-order='descending'
+type-format='category'
+window-position=(0, 0)
+window-size=(960, 1097)
+
+[org/virt-manager/virt-manager]
+manager-window-height=1101
+manager-window-width=931
+
+[org/virt-manager/virt-manager/confirm]
+unapplied-dev=true
+
+[org/virt-manager/virt-manager/connections]
+autoconnect=['qemu:///system']
+uris=['qemu:///system']
+
+[org/virt-manager/virt-manager/details]
+show-toolbar=true
+
+[org/virt-manager/virt-manager/paths]
+image-default='{{ .chezmoi.homeDir }}/qemu'
+
+[org/virt-manager/virt-manager/vmlist-fields]
+disk-usage=false
+network-traffic=false
+
+[org/virt-manager/virt-manager/vms/7e0a8b2e615f459497fbf7675b93c5e0]
+autoconnect=1
+vm-window-size=(1280, 844)
+
+[org/virt-manager/virt-manager/vms/fb909a90ee714775983f459e1480a091]
+autoconnect=1
+vm-window-size=(1920, 1145)

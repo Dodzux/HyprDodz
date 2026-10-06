@@ -6,6 +6,7 @@ ffmpegthumbnailer
 fish
 fzf
 git
+github-cli
 jq
 libdvdcss
 libgsf

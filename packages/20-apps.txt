@@ -4,6 +4,7 @@ chezmoi
 firefox
 fuse2
 inkscape
+micro
 mpv
 neovim
 obsidian

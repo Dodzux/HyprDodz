@@ -27,14 +27,15 @@ templated so they can follow the destination machine.
 
 ## Install on another machine
 
-Replace `YOUR_USERNAME/YOUR_REPO` with your personal repository.
+Personal repository: [Dodzux/HyprDodz](https://github.com/Dodzux/HyprDodz).
 
 ```sh
 sudo pacman -S --needed chezmoi git
-chezmoi init YOUR_USERNAME/YOUR_REPO
+chezmoi init Dodzux/HyprDodz
 chezmoi diff
 chezmoi apply
 ~/.local/share/chezmoi/scripts/bootstrap.sh
+python3 ~/.local/share/chezmoi/scripts/restore-config-permissions.py
 ```
 
 Initialization asks for the name shown by the lock screen and greeter and
@@ -57,6 +58,49 @@ RGB scripts include support for the ASUS G614PH keyboard and Logitech G305,
 plus a generic OpenRGB fallback. Hardware updates require access to the
 relevant HID devices. `openrgb_color.sh.before-g614ph` is retained because the
 active RGB script executes it on other boards.
+
+## Configuration coverage
+
+The repository also includes ordinary settings for OpenRGB, Micro, Inkscape,
+OBS, Discord, Obsidian, Shelly, KDE/Dolphin, Qalculate, Qt tools, Git, Bash,
+Zsh, default applications, systemd user links, and the installed theme assets.
+
+See [CONFIG-COVERAGE.md](CONFIG-COVERAGE.md) for the folder-by-folder comparison.
+The audit checks file contents and symlink destinations and detects new files
+that have never been added to chezmoi:
+
+```sh
+python3 scripts/audit-configs.py --report CONFIG-COVERAGE.md
+```
+
+Private browser/account profiles, authentication cookies, GitHub credentials,
+OBS WebSocket passwords, caches, generated cursor variants, logs, editor state,
+and old backup files stay local. Wallpapers over 100 MiB are excluded by
+request, including `hunt-showdown-death-roots.1920x1080_1.gif`.
+
+Some folders use permission mode `0751`, which chezmoi cannot encode with its
+standard attributes. The original modes are saved in
+`system/user/directory-permissions.json`. After applying the configs, restore
+those modes with `python3 scripts/restore-config-permissions.py` (add
+`--dry-run` to preview). Native `chezmoi status` can show those directory
+permission differences even when the supplemental snapshot matches.
+[Chezmoi permission limitations](https://www.chezmoi.io/user-guide/frequently-asked-questions/design/).
+
+Selected ordinary Brave/Firefox preferences are saved separately in
+`system/user/browser-preferences.json`. This captures a subset of display,
+language, and related preferences; it does not reproduce a complete browser
+profile and is not applied automatically. Refresh that snapshot with:
+
+```sh
+python3 scripts/user_settings.py
+```
+
+GNOME/dconf preferences are saved as a text template in
+`system/user/dconf.ini.tmpl`. To restore that snapshot explicitly:
+
+```sh
+chezmoi execute-template < system/user/dconf.ini.tmpl | dconf load /
+```
 
 ## Track changes from the running desktop
 
@@ -83,12 +127,12 @@ that state rather than saving a fixed wallpaper color.
 
 ## Publish to your own Git repository
 
-Create an empty repository first. This checkout still has the original
-reference remote; replace it with your own URL before pushing.
+This checkout points to `https://github.com/Dodzux/HyprDodz.git`. Review the
+changes before committing and pushing.
 
 ```sh
 cd ~/.local/share/chezmoi
-git remote set-url origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git remote set-url origin https://github.com/Dodzux/HyprDodz.git
 git add .
 git diff --cached --stat
 git commit -m "Import my current desktop configs"

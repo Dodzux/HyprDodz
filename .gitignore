@@ -37,3 +37,6 @@ Thumbs.db
 # Previous config experiments (one named file is an active RGB dependency)
 *.before-*
 !dot_config/hypr/scripts/executable_openrgb_color.sh.before-g614ph
+
+# Oversized wallpapers kept local
+Pictures/Wallpapers/*hunt-showdown-death-roots.1920x1080_1.gif

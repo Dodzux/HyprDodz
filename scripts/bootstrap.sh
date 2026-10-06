@@ -3,7 +3,7 @@
 # CachyOS Hyprland Environment Bootstrap
 # =============================================================================
 # One-command full setup script to restore packages, shells, and services.
-# Run after: chezmoi init --apply YOUR_USERNAME/YOUR_REPO
+# Run after: chezmoi init --apply Dodzux/HyprDodz
 # =============================================================================
 
 set -euo pipefail

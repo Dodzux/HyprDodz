@@ -1,0 +1,94 @@
+{
+  ".config/BraveSoftware/Brave-Browser/Default/Preferences": {
+    "format": "chromium-json",
+    "preferences": {
+      "accessibility": {
+        "captions": {
+          "headless_caption_enabled": false
+        }
+      },
+      "bookmark_bar": {
+        "show_on_all_tabs": true
+      },
+      "intl": {
+        "accept_languages": "en-US,ar-EG,ar,en",
+        "selected_languages": "en-US,en"
+      },
+      "spellcheck": {
+        "dictionaries": [
+          "en-US"
+        ],
+        "dictionary": ""
+      },
+      "vertical_tabs": {
+        "collapsed_state": false,
+        "uncollapsed_width": 240
+      },
+      "webkit": {
+        "webprefs": {
+          "fonts": {
+            "fixed": {
+              "Zyyy": "CaskaydiaCove Nerd Font"
+            },
+            "math": {
+              "Zyyy": "CaskaydiaCove Nerd Font"
+            },
+            "sansserif": {
+              "Zyyy": "CaskaydiaCove Nerd Font"
+            },
+            "serif": {
+              "Zyyy": "CaskaydiaCove Nerd Font"
+            },
+            "standard": {
+              "Zyyy": "CaskaydiaCove Nerd Font"
+            }
+          }
+        }
+      },
+      "browser": {
+        "custom_chrome_frame": false,
+        "theme": {
+          "color_scheme": 2,
+          "color_scheme2": 2,
+          "saved_local_theme": "CAAQAEIASAE="
+        },
+        "window_placement": {
+          "bottom": 1145,
+          "left": 0,
+          "maximized": true,
+          "right": 960,
+          "top": 0,
+          "work_area_bottom": 1200,
+          "work_area_left": 0,
+          "work_area_right": 1920,
+          "work_area_top": 0
+        },
+        "window_placement_popup": {
+          "bottom": 1145,
+          "left": 0,
+          "maximized": true,
+          "right": 960,
+          "top": 0,
+          "work_area_bottom": 1200,
+          "work_area_left": 0,
+          "work_area_right": 1920,
+          "work_area_top": 0
+        }
+      },
+      "brave": {
+        "always_show_bookmark_bar_on_ntp": false,
+        "enable_media_router_on_restart": true,
+        "enable_window_closing_confirm": true
+      }
+    }
+  },
+  ".config/mozilla/firefox/wemag39j.default-release/prefs.js": {
+    "format": "firefox-user-prefs",
+    "preferences": {
+      "browser.uiCustomization.state": "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[],\"nav-bar\":[\"sidebar-button\",\"back-button\",\"forward-button\",\"stop-reload-button\",\"customizableui-special-spring1\",\"vertical-spacer\",\"urlbar-container\",\"customizableui-special-spring2\",\"downloads-button\",\"fxa-toolbar-menu-button\",\"reset-pbm-toolbar-button\",\"unified-extensions-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\",\"new-tab-button\",\"customizableui-special-spring3\",\"alltabs-button\",\"smartwindow-group-tabs-button\",\"ai-window-toggle\"],\"vertical-tabs\":[],\"PersonalToolbar\":[\"import-button\",\"personal-bookmarks\"]},\"seen\":[\"reset-pbm-toolbar-button\",\"smartwindow-group-tabs-button\",\"ai-window-toggle\",\"developer-button\",\"screenshot-button\"],\"dirtyAreaCache\":[\"nav-bar\",\"TabsToolbar\",\"vertical-tabs\",\"toolbar-menubar\",\"PersonalToolbar\"],\"currentVersion\":26,\"newElementCount\":3}",
+      "extensions.activeThemeID": "default-theme@mozilla.org",
+      "privacy.trackingprotection.allow_list.hasMigratedCategoryPrefs": true,
+      "privacy.trackingprotection.allow_list.hasUserInteractedWithETPSettings": true
+    }
+  }
+}

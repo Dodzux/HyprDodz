@@ -1,0 +1,71 @@
+MenuBar=Disabled
+
+[$Version]
+update_info=dolphin_detailsmodesettings.upd:rename-leading-padding
+
+[CompactMode]
+PreviewSize=96
+
+[ContextMenu]
+ShowCopyMoveMenu=true
+
+[DetailsMode]
+IconSize=176
+
+[ExtractDialog]
+1920x1080 screen: Height=1080
+1920x1080 screen: Width=1920
+1920x1080 screen: Window-Maximized=true
+2 screens: Height=1080
+2 screens: Width=1920
+2 screens: Window-Maximized=true
+DirHistory[$e]=$HOME/Downloads/,$HOME/Downloads/CascadiaCode/,$HOME/.local/share/fonts/
+
+[FoldersPanel]
+HiddenFilesShown=true
+
+[General]
+ShowSelectionToggle=false
+ShowSpaceInfo=false
+ShowZoomSlider=false
+Version=202
+ViewPropsTimestamp=2023,4,26,16,58,48.324
+
+[Icons]
+Theme=Tela-circle-black-dark
+
+[IconsMode]
+PreviewSize=144
+
+[KFileDialog Settings]
+Places Icons Auto-resize=true
+Places Icons Static Size=48
+
+[KPropertiesDialog]
+2560x1080 screen: Window-Maximized=true
+
+[MainWindow]
+MenuBar=Disabled
+
+[MainWindow][Toolbar mainToolBar]
+IconSize=16
+ToolButtonStyle=IconOnly
+
+[PlacesPanel]
+IconSize=-1
+
+[PreviewSettings]
+Plugins=appimagethumbnail,audiothumbnail,comicbookthumbnail,cursorthumbnail,djvuthumbnail,ebookthumbnail,exrthumbnail,imagethumbnail,jpegthumbnail,kraorathumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,svgthumbnail
+
+[Search]
+Location=Everywhere
+
+[Toolbar mainToolBar]
+IconSize=32
+ToolButtonStyle=IconOnly
+
+[UiSettings]
+ColorScheme=Tela-circle
+
+[ViewPropertiesDialog]
+1920x1080 screen: Window-Maximized=true

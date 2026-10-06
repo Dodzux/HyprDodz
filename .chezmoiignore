@@ -41,3 +41,10 @@ system/**
 # IDE files
 **/.idea/**
 **/.vscode/**
+
+# Repository reports and empty-directory markers
+CONFIG-COVERAGE.md
+**/.keep
+
+# Oversized wallpapers kept local
+Pictures/Wallpapers/hunt-showdown-death-roots.1920x1080_1.gif
