@@ -87,7 +87,9 @@ PanelWindow {
 
                 MediaWidget {}
                 IdleInhibitorWidget {}
-                Clock { parentWindow: bar }
+                Clock {
+                    parentWindow: bar
+                }
             }
         }
 
@@ -109,14 +111,24 @@ PanelWindow {
                 KeyboardLayout {}
                 AudioWidget {}
                 MicWidget {}
-                NetworkWidget { parentWindow: bar }   // icon + ↓↑ speeds (was NetworkSpeedWidget + NetworkWidget)
-                BluetoothWidget { parentWindow: bar }
+                NetworkWidget {
+                    parentWindow: bar
+                }   // icon + ↓↑ speeds (was NetworkSpeedWidget + NetworkWidget)
+                BluetoothWidget {
+                    parentWindow: bar
+                }
                 BatteryWidget {}
                 NotificationButton {}
                 CheatsheetButton {}
-                ScreenshotButton { parentWindow: bar }
-                SystemTray { parentWindow: bar }
-                PowerButton { parentWindow: bar }
+                ScreenshotButton {
+                    parentWindow: bar
+                }
+                SystemTray {
+                    parentWindow: bar
+                }
+                PowerButton {
+                    parentWindow: bar
+                }
             }
         }
     }

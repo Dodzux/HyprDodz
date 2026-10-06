@@ -49,12 +49,14 @@ end
 -- ▓▒░ APPLICATION LAUNCHER BINDINGS
 bind(m .. " + T", hl.dsp.exec_cmd(vars.terminal), { description = "Apps: Terminal (kitty)" })
 bind(m .. " + E", hl.dsp.exec_cmd(vars.fileManager), { description = "Apps: File manager (yazi)" })
-bind(m .. " + F", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Firefox)" })
+bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Firefox)" })
 bind(m .. " + C", hl.dsp.exec_cmd(vars.terminal_editor), { description = "Apps: Editor (Neovim)" })     -- kitty -e nvim (NvChad)
 bind(m .. " + O", hl.dsp.exec_cmd(vars.notingApp), { description = "Apps: Notes (Obsidian)" })
 bind(m .. " + D", hl.dsp.exec_cmd(vars.discord), { description = "Apps: Discord" })
 bind(m .. " + U", hl.dsp.exec_cmd(vars.updater), { description = "System: Update system (pacman -Syu)" })              -- CachyOS system updater
--- hl.bind(m .. " + G", hl.dsp.exec_cmd(vars.antigravity))
+if vars.codex then
+    bind(m .. " + X", hl.dsp.exec_cmd(vars.codex), { description = "Apps: Codex" })
+end
 if vars.thePlan then   -- nil unless installed (modules/variables.lua)
     bind(m .. " + Y", hl.dsp.exec_cmd(vars.thePlan), { description = "Apps: The Plan" })
 end
@@ -65,7 +67,7 @@ end
 -- See: https://wiki.hypr.land/Configuring/Basics/Binds/#global-shortcuts
 bind(m .. " + A",         hl.dsp.global("quickshell:toggle-launcher"), { description = "Panels: App launcher" })
 bind(m .. " + Space",     hl.dsp.global("quickshell:toggle-wallpaper-selector"), { description = "Panels: Wallpaper selector" })
-bind(m .. " + B",         hl.dsp.global("quickshell:focus-bar"), { description = "Panels: Focus the bar (keyboard navigation)" })
+bind(m .. " + F",         hl.dsp.global("quickshell:focus-bar"), { description = "Panels: Focus the bar (keyboard navigation)" })
 bind(m .. " + Backspace", hl.dsp.global("quickshell:toggle-power-menu"), { description = "Panels: Power menu" })
 bind("Print",             hl.dsp.global("quickshell:toggle-screenshot"), { description = "Capture: Screenshot panel (copy / save)" })
 bind(m .. " + H",         hl.dsp.global("quickshell:toggle-shortcuts"), { description = "Panels: Keybind cheatsheet" })
@@ -107,7 +109,7 @@ bind("F11", hl.dsp.exec_cmd(
 ), { description = "Capture: Region to clipboard" })
 -- F12: Region capture → Satty annotation → save & clipboard
 bind("F12", hl.dsp.exec_cmd(
-    'sh -c \'mkdir -p ~/Pictures/Screenshots; pkill -x slurp || grim -g "$(slurp)" - | satty --filename - --output-filename ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png\''
+    'sh -c \'mkdir -p ~/Pictures/Screenshots; pkill -x slurp || grim -g "$(slurp)" - || satty --filename - --output-filename ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png\''
 ), { description = "Capture: Region to Satty (annotate + save)" })
 -- SUPER+Print: close all windows first -- captures the desktop as the README
 -- preview and pushes it (chezmoi scripts/showcase.sh)

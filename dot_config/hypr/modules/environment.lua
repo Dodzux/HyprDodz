@@ -45,10 +45,19 @@ if #gpus > 0 then
 end
 
 -- ▓▒░ CURSOR
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
-hl.env("XCURSOR_THEME", "catppuccin-mocha-dark-cursors")
-hl.env("HYPRCURSOR_THEME", "catppuccin-mocha-dark-cursors")
+hl.env("XCURSOR_SIZE", "20")
+hl.env("HYPRCURSOR_SIZE", "20")
+-- Bibata accent theme is persisted by sync_cursor.py; read it on login/reload.
+local cursor_theme = "Bibata-Modern-Ice"
+local cursor_state_dir = os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")
+local cursor_state = io.open(cursor_state_dir .. "/hypr/cursor-theme", "r")
+if cursor_state then
+    local saved = cursor_state:read("*l")
+    cursor_state:close()
+    if saved and saved:match("^Bibata%-Accent%-%x%x%x%x%x%x$") then cursor_theme = saved end
+end
+hl.env("XCURSOR_THEME", cursor_theme)
+hl.env("HYPRCURSOR_THEME", cursor_theme)
 
 -- ▓▒░ GTK
 hl.env("GDK_BACKEND", "wayland,x11,*")

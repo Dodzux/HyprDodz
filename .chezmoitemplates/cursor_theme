@@ -1,0 +1,10 @@
+{{- $stateHome := env "XDG_STATE_HOME" | default (joinPath .chezmoi.homeDir ".local/state") -}}
+{{- $state := joinPath $stateHome "hypr/cursor-theme" -}}
+{{- $theme := "Bibata-Modern-Ice" -}}
+{{- if stat $state -}}
+{{-   $saved := include $state | trim -}}
+{{-   if regexMatch "^Bibata-Accent-[0-9a-fA-F]{6}$" $saved -}}
+{{-     $theme = $saved -}}
+{{-   end -}}
+{{- end -}}
+{{- $theme -}}

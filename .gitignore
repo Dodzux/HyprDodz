@@ -29,3 +29,11 @@ Thumbs.db
 
 # Agent / AI local workspace files
 .agents/
+
+# Local assistant/account metadata
+.codex/
+.aws/
+
+# Previous config experiments (one named file is an active RGB dependency)
+*.before-*
+!dot_config/hypr/scripts/executable_openrgb_color.sh.before-g614ph

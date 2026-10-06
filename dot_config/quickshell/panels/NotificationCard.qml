@@ -22,7 +22,7 @@ Rectangle {
 
     // Emitted when the user clicks the card body. The owner decides what that
     // means: the popup hides itself, the history entry closes the panel.
-    signal activated()
+    signal activated
 
     readonly property bool isCritical: notification && notification.urgency === NotificationUrgency.Critical
     // Array.from: `actions` is a QList sequence, not guaranteed a real JS array.
@@ -38,7 +38,11 @@ Rectangle {
     radius: 19
     antialiasing: true
 
-    Behavior on border.color { ColorAnimation { duration: 120 } }
+    Behavior on border.color {
+        ColorAnimation {
+            duration: 120
+        }
+    }
 
     // Matches `key` as a whole word inside `str` — unlike includes(), "sh"
     // can't match inside "finished" and "tor" can't match inside "editor".
@@ -48,13 +52,17 @@ Rectangle {
 
     function iconSource() {
         var n = card.notification;
-        if (!n) return "";
+        if (!n)
+            return "";
         // An inline image (avatar, album art, screenshot) beats the app icon.
-        if (n.image) return n.image;
+        if (n.image)
+            return n.image;
         var iconStr = n.appIcon;
         if (iconStr) {
-            if (iconStr.startsWith("/") || iconStr.startsWith("file://")) return iconStr;
-            if (Quickshell.hasThemeIcon(iconStr)) return "image://icon/" + iconStr;
+            if (iconStr.startsWith("/") || iconStr.startsWith("file://"))
+                return iconStr;
+            if (Quickshell.hasThemeIcon(iconStr))
+                return "image://icon/" + iconStr;
         }
         // Fall back to the sender's real desktop entry (recovers a correct
         // icon for e.g. notify-send, which reports no usable icon name).
@@ -67,8 +75,10 @@ Rectangle {
 
     function appDisplayName() {
         var name = card.notification ? card.notification.appName : "";
-        if (!name) return "Notification";
-        if (name.toLowerCase() === "notify-send") return "Terminal · notify-send";
+        if (!name)
+            return "Notification";
+        if (name.toLowerCase() === "notify-send")
+            return "Terminal · notify-send";
         return name;
     }
 
@@ -76,28 +86,35 @@ Rectangle {
         // Matched on the app name only — notification body text is arbitrary
         // and previously caused false matches (e.g. "Tutorial" ~ "tor").
         var str = (card.notification ? card.notification.appName || "" : "").toLowerCase();
-        if (["notify-send", "ghostty", "kitty", "alacritty", "foot", "wezterm", "terminal",
-             "konsole", "xterm", "bash", "zsh", "python", "node", "cargo", "pacman", "yay",
-             "paru", "git", "make", "gcc"].some(k => hasWord(str, k))) return "󰆍";
-        if (["firefox", "chrome", "chromium", "brave", "zen", "edge", "browser", "opera",
-             "vivaldi", "safari", "tor"].some(k => hasWord(str, k))) return "󰖟";
-        if (["discord", "vesktop", "webcord", "telegram", "signal", "slack", "element",
-             "whatsapp", "matrix", "teams"].some(k => hasWord(str, k))) return "󰭹";
-        if (["spotify", "music", "amberol", "mpv", "vlc", "rhythmbox", "cider"].some(k => hasWord(str, k))) return "󰝚";
-        if (["volume", "pipewire", "mute"].some(k => str.includes(k))) return "󰕾";
+        if (["notify-send", "ghostty", "kitty", "alacritty", "foot", "wezterm", "terminal", "konsole", "xterm", "bash", "zsh", "python", "node", "cargo", "pacman", "yay", "paru", "git", "make", "gcc"].some(k => hasWord(str, k)))
+            return "󰆍";
+        if (["firefox", "chrome", "chromium", "brave", "zen", "edge", "browser", "opera", "vivaldi", "safari", "tor"].some(k => hasWord(str, k)))
+            return "󰖟";
+        if (["discord", "vesktop", "webcord", "telegram", "signal", "slack", "element", "whatsapp", "matrix", "teams"].some(k => hasWord(str, k)))
+            return "󰭹";
+        if (["spotify", "music", "amberol", "mpv", "vlc", "rhythmbox", "cider"].some(k => hasWord(str, k)))
+            return "󰝚";
+        if (["volume", "pipewire", "mute"].some(k => str.includes(k)))
+            return "󰕾";
         return "󰵅";
     }
 
     function timeText() {
-        if (!card.receivedAt) return "";
+        if (!card.receivedAt)
+            return "";
         var mins = Math.floor((card.now.getTime() - card.receivedAt.getTime()) / 60000);
-        if (mins < 1) return "now";
-        if (mins < 60) return mins + "m";
-        if (mins < 1440) return Math.floor(mins / 60) + "h";
+        if (mins < 1)
+            return "now";
+        if (mins < 60)
+            return mins + "m";
+        if (mins < 1440)
+            return Math.floor(mins / 60) + "h";
         return Qt.formatDate(card.receivedAt, "d MMM");
     }
 
-    HoverHandler { id: cardHover }
+    HoverHandler {
+        id: cardHover
+    }
 
     // Card body click: run the app's default action (Firefox focuses the tab,
     // Discord opens the channel). Declared before the content so the close and
@@ -106,7 +123,8 @@ Rectangle {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: {
-            if (card.defaultAction) card.defaultAction.invoke();
+            if (card.defaultAction)
+                card.defaultAction.invoke();
             card.activated();
         }
     }
@@ -214,8 +232,13 @@ Rectangle {
                             font.pixelSize: 12
                         }
 
-                        HoverHandler { id: closeHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: card.notification.dismiss() }
+                        HoverHandler {
+                            id: closeHover
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                        TapHandler {
+                            onTapped: card.notification.dismiss()
+                        }
                     }
                 }
 
@@ -248,7 +271,7 @@ Rectangle {
                     lineHeight: 1.25
                     renderType: Text.NativeRendering
                     visible: text.length > 0
-                    onLinkActivated: (link) => Qt.openUrlExternally(link)
+                    onLinkActivated: link => Qt.openUrlExternally(link)
                 }
             }
         }
@@ -284,8 +307,13 @@ Rectangle {
                         renderType: Text.NativeRendering
                     }
 
-                    HoverHandler { id: actionHover; cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: actionBtn.modelData.invoke() }
+                    HoverHandler {
+                        id: actionHover
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    TapHandler {
+                        onTapped: actionBtn.modelData.invoke()
+                    }
                 }
             }
         }

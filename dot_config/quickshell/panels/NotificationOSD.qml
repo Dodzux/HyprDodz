@@ -32,9 +32,11 @@ Item {
 
     function playSound(notification) {
         var hints = notification.hints || {};
-        if (hints["suppress-sound"]) return;
+        if (hints["suppress-sound"])
+            return;
         var app = (notification.appName || "").toLowerCase();
-        if (selfSoundingApps.some(a => app.includes(a))) return;
+        if (selfSoundingApps.some(a => app.includes(a)))
+            return;
 
         // canberra resolves XDG sound-theme names, so an app's own sound-name
         // hint works as well as a file path.
@@ -59,7 +61,8 @@ Item {
             // Do Not Disturb: the notification is kept in history, silently.
             // Critical ones (low battery, failed backups) still get through.
             var critical = notification.urgency === NotificationUrgency.Critical;
-            if (DndService.isEnabled && !critical) return;
+            if (DndService.isEnabled && !critical)
+                return;
 
             osdRoot.playSound(notification);
             osdRoot.popups = osdRoot.popups.concat([notification]);
@@ -81,7 +84,7 @@ Item {
             right: true
         }
 
-        margins.top: 48
+        margins.top: 18
         margins.right: 16
 
         implicitWidth: 360
@@ -100,7 +103,9 @@ Item {
             Repeater {
                 // ScriptModel diffs by object identity, so adding a popup does
                 // not rebuild (and re-animate) the ones already on screen.
-                model: ScriptModel { values: osdRoot.popups }
+                model: ScriptModel {
+                    values: osdRoot.popups
+                }
 
                 NotificationCard {
                     id: popupCard
@@ -122,8 +127,10 @@ Item {
                         running: !popupCard.isCritical && !popupCard.hovered
                         onTriggered: {
                             // Transient notifications ask not to be kept at all.
-                            if (popupCard.modelData.transient) popupCard.modelData.expire();
-                            else osdRoot.removePopup(popupCard.modelData);
+                            if (popupCard.modelData.transient)
+                                popupCard.modelData.expire();
+                            else
+                                osdRoot.removePopup(popupCard.modelData);
                         }
                     }
 

@@ -1,5 +1,11 @@
 palette = "catppuccin_mocha"
 
+add_newline = false
+format = """
+[-Hypr Dodz](accent) $directory$git_branch$git_status
+[-❯ ](accent2)
+"""
+
 [character]
 success_symbol = "[[󰇥 ](accent)❯](accent2)"
 error_symbol = "[[󰇥 ](red)❯](red)"
@@ -24,6 +30,10 @@ symbol = " "
 symbol = " "
 
 [directory]
+disabled = false
+format = "[$path](bold accent2)"
+truncate_to_repo = false
+home_symbol = ""{{ " " }}
 read_only = " 󰌾"
 
 [docker_context]

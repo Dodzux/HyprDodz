@@ -3,7 +3,7 @@
 # CachyOS Hyprland Environment Bootstrap
 # =============================================================================
 # One-command full setup script to restore packages, shells, and services.
-# Run after: chezmoi init --apply BodzTH/hyprconfigs
+# Run after: chezmoi init --apply YOUR_USERNAME/YOUR_REPO
 # =============================================================================
 
 set -euo pipefail
@@ -108,20 +108,8 @@ else
     rm -rf "$tmp"
 fi
 
-CURSOR_THEME="catppuccin-mocha-dark-cursors"
-if [ -d "$HOME/.local/share/icons/$CURSOR_THEME" ] || [ -d "/usr/share/icons/$CURSOR_THEME" ]; then
-    log_info "$CURSOR_THEME already installed."
-else
-    log_info "Installing $CURSOR_THEME into ~/.local/share/icons..."
-    mkdir -p "$HOME/.local/share/icons"
-    # bsdtar (libarchive, a pacman dependency) reads zip; no unzip needed.
-    if curl -fsSL "https://github.com/catppuccin/cursors/releases/latest/download/$CURSOR_THEME.zip" \
-        | bsdtar -xf - -C "$HOME/.local/share/icons"; then
-        log_success "$CURSOR_THEME installed."
-    else
-        log_warn "$CURSOR_THEME install failed; the default cursor is used instead."
-    fi
-fi
+# Bibata-Modern-Ice (Xcursor + Hyprcursor) is tracked in dot_local/share/icons.
+# Step 10 installs it through chezmoi; sync_cursor.py generates accent variants.
 
 # 6. Refresh Font Cache
 log_info "Updating system font cache..."

@@ -19,6 +19,9 @@ import signal
 import subprocess
 import sys
 import time
+import json
+import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # numpy and PIL are imported inside extract_color(), not here: they take ~70ms
 # to load, and the latest-wins token must be claimed before that — otherwise
@@ -142,9 +145,17 @@ def shift_lightness(hex_color, dl):
 
 
 def write_atomic(path, content):
-    with open(path + ".tmp", "w") as f:
-        f.write(content)
-    os.replace(path + ".tmp", path)
+    path = os.fspath(path)
+    mode = os.stat(path).st_mode & 0o777 if os.path.exists(path) else 0o600
+    fd, temporary = tempfile.mkstemp(prefix='.' + os.path.basename(path), dir=os.path.dirname(path))
+    try:
+        with os.fdopen(fd, 'w') as stream:
+            stream.write(content)
+        os.chmod(temporary, mode)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def rewrite(path, substitutions):
@@ -201,14 +212,23 @@ def render(template, path, tokens):
     write_atomic(path, new)
 
 
-def apply(hex_color):
-    """Push the color to Hyprland, hyprlock, hyprtoolkit, quickshell, GTK, Qt,
-    yazi, neovim, starship, kitty and OpenRGB."""
-    # LEDs first, fire-and-forget: openrgb_color.sh owns every OpenRGB detail
-    # (SDK server fast path, Static/Direct per device, latest-wins locking).
-    # Own session so it isn't tied to this short-lived process.
-    subprocess.Popen([os.path.join(SCRIPT_DIR, "openrgb_color.sh"), hex_color],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+def apply_files(hex_color, token):
+    """Keep unrelated targets working if an optional configuration cannot be written."""
+    errors = []
+    fg = on_accent(hex_color)
+
+    def guarded(method, *args):
+        check_latest(token)
+        try:
+            globals()[method](*args)
+        except OSError as error:
+            message = f'{args[0]}: {error}'
+            errors.append(message)
+            log_message(f'{token} settings: {message}')
+
+    def rewrite(*args): guarded('rewrite', *args)
+    def rewrite_ini(*args): guarded('rewrite_ini', *args)
+    def render(*args): guarded('render', *args)
 
     rewrite("~/.config/hypr/hyprlock.conf", [
         (r"^\$accent\s*=.*$", f"$accent   = rgb({hex_color})"),
@@ -217,35 +237,12 @@ def apply(hex_color):
     rewrite("~/.config/hypr/hyprtoolkit.conf", [
         (r"^accent\s*=.*$", f"accent = 0xFF{hex_color}"),
     ])
-    # quickshell: set live over IPC, and persist for its next start (Theme.qml
-    # reads ACCENT_STATE once on load). This used to rewrite Theme.qml and rely
-    # on quickshell's hot-reload, which missed a write that landed while the
-    # previous reload was still running — the bar kept the old colour in 5 of
-    # 10 rapid-change trials. IPC is one property change, ~20ms, no reload.
-    os.makedirs(os.path.dirname(ACCENT_STATE), exist_ok=True)
-    with open(ACCENT_STATE + ".tmp", "w") as f:
-        f.write(hex_color + "\n")
-    os.replace(ACCENT_STATE + ".tmp", ACCENT_STATE)
-    try:  # quickshell not running (or not installed) must not block the border
-        subprocess.run(["qs", "ipc", "call", "theme", "setAccent", hex_color],
-                       capture_output=True, timeout=2.0)
-    except (OSError, subprocess.TimeoutExpired):
-        pass
-    # GTK: ~/.themes/Graphite-Dark is built by build_gtk_theme.py to read these
-    # two at runtime, so new windows pick them up; open ones keep their colours.
-    fg = on_accent(hex_color)
     for css in ("~/.config/gtk-3.0/gtk.css", "~/.config/gtk-4.0/gtk.css", "~/.config/gtk-4.0/gtk-dark.css"):
         rewrite(css, [
             (r"@define-color\s+accent_color\s+#[0-9a-fA-F]+;", f"@define-color accent_color #{hex_color};"),
             (r"@define-color\s+accent_bg_color\s+#[0-9a-fA-F]+;", f"@define-color accent_bg_color #{hex_color};"),
             (r"@define-color\s+accent_fg_color\s+#[0-9a-fA-F]+;", f"@define-color accent_fg_color #{fg};"),
         ])
-    # Qt (Kvantum GraphiteDark, via qt6ct): the SVG is rendered from its .in
-    # template, where the stock grey accent (#e0e0e0, focused #f2f2f2, pressed
-    # #cccccc) is @ACCENT@/@ACCENT_LIGHT@/@ACCENT_DARK@ -- edit the template,
-    # not the SVG. The kvconfig keys are the palette highlight and the text
-    # drawn on accent fills. The qt6ct stylesheet overrides Kvantum's progress
-    # bar, so its `/* accent */` line follows too. New Qt apps only.
     render("~/.config/Kvantum/Graphite/GraphiteDark.svg.in", "~/.config/Kvantum/Graphite/GraphiteDark.svg", {
         "ACCENT": f"#{hex_color}",
         "ACCENT_LIGHT": f"#{shift_lightness(hex_color, 0.07)}",
@@ -262,87 +259,241 @@ def apply(hex_color):
     rewrite("~/.config/qt6ct/qss/hyprblur-round.qss", [
         (r"#[0-9a-fA-F]{6};([ \t]*/\* accent \*/)", rf"#{hex_color};\g<1>"),
     ])
-    # neovim: chadrc reads ACCENT_STATE, but base46 draws from a compiled cache,
-    # so each running nvim recompiles via ~/.config/nvim/lua/accent.lua. It
-    # re-reads ACCENT_STATE itself, so order doesn't matter. New instances
-    # recompile at startup if the cache is stale. One at a time, so no two
-    # write the shared cache at once; a dead socket fails in milliseconds.
-    for sock in sorted(glob.glob(os.path.join(RUNTIME_DIR, "nvim.*.0"))):
-        try:
-            subprocess.run(["nvim", "--server", sock, "--remote-expr", "v:lua.require'accent'.reload()"],
-                           capture_output=True, stdin=subprocess.DEVNULL, timeout=2.0)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
-    # starship re-reads its config every prompt, so the file is all it needs.
-    # The prompt icon is the accent and the ❯ its companion (see companion()).
     rewrite("~/.config/starship.toml", [
         (r'^accent[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent = "#{hex_color}"'),
         (r'^accent2[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent2 = "#{companion(hex_color)}"'),
     ])
-    # kitty: cursor only. kitty auto-reloads kitty.conf on change; SIGUSR1 is
-    # its documented reload, sent too in case the watcher misses os.replace().
     rewrite("~/.config/kitty/kitty.conf", [
         (r"^cursor[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"cursor                  #{hex_color}"),
+        (r"^selection_background[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_background    #{hex_color}"),
+        (r"^selection_foreground[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_foreground    #{fg}"),
     ])
-    kitty_pids = subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "kitty"],
-                                capture_output=True, text=True).stdout.split()
-    for pid in kitty_pids:
-        try:
-            os.kill(int(pid), signal.SIGUSR1)
-        except (OSError, ValueError):
-            pass
-    # yazi: only lines tagged `# accent: fg|bg` in theme.toml, and only that key
-    # on each, so the #111111 text on accent badges stays dark. Yazi can't reload
-    # its theme live; new instances get the colour.
     rewrite("~/.config/yazi/theme.toml", [
         (rf'^(.*\b{key} = ")#[0-9a-fA-F]{{6}}(".*#\s*accent: {key}\s*)$', rf"\g<1>#{hex_color}\g<2>")
         for key in ("fg", "bg")
     ])
+    return errors
 
-    # Group borders are deliberately not synced: group theming is archived in
-    # ~/.config/config_archive/hypr/groups.lua, which carries this eval's group variant.
-    border = f'{{ "rgba({hex_color}ee)", "rgba({hex_color}00)" }}'
-    lua = f"hl.config({{ general = {{ col = {{ active_border = {{ colors = {border}, angle = 45 }} }} }} }})"
-    subprocess.run(["hyprctl", "eval", lua], capture_output=True, timeout=2.0)
+class Superseded(Exception):
+    pass
+
+
+def extract_color_cached(image):
+    """Share analysis between wallpaper loading and subsequent reload events."""
+    import hashlib
+    metadata = os.stat(image)
+    identity = f'{os.path.realpath(image)}:{metadata.st_mtime_ns}:{metadata.st_size}:chroma2-v1'
+    name = hashlib.sha256(identity.encode()).hexdigest()
+    cache_dir = os.path.join(os.path.dirname(ACCENT_STATE), 'wallpaper-colors')
+    os.makedirs(cache_dir, exist_ok=True)
+    path = os.path.join(cache_dir, name + '.json')
+    with open(os.path.join(RUNTIME_DIR, 'accent-color-' + name + '.lock'), 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            with open(path) as stream:
+                saved = json.load(stream)
+            if re.fullmatch('[0-9a-f]{6}', saved['color']) and isinstance(saved['reason'], str):
+                return saved['color'], saved['reason']
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        color, reason = extract_color(image)
+        write_atomic(path, json.dumps({'color': color, 'reason': reason}))
+        return color, reason
 
 
 def claim_token():
-    """Mark this run as the newest one; returns its token."""
-    token = f"{os.getpid()}-{time.monotonic_ns()}"
-    with open(TOKEN_FILE, "w") as f:
-        f.write(token)
-    return token
+    """Publish a complete request before extraction or external work starts."""
+    with open(LOCK_FILE + '.request', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        token = f"{os.getpid()}-{time.monotonic_ns()}"
+        write_atomic(TOKEN_FILE, token)
+        return token
 
 
 def is_latest(token):
-    """False if a newer run started while this one was extracting."""
-    try:
-        with open(TOKEN_FILE) as f:
-            return f.read() == token
-    except OSError:
+    if token is None:
         return True
+    try:
+        with open(TOKEN_FILE) as stream:
+            return stream.read() == token
+    except OSError:
+        return False
+
+
+def check_latest(token):
+    if not is_latest(token):
+        raise Superseded()
+
+
+def log_message(message):
+    path = os.path.join(os.path.dirname(ACCENT_STATE), 'accent-sync.log')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(LOCK_FILE + '.log', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if os.path.exists(path) and os.path.getsize(path) > 512 * 1024:
+            os.replace(path, path + '.1')
+        with open(path, 'a') as stream:
+            stream.write(time.strftime('%Y-%m-%d %H:%M:%S ') + message.rstrip() + '\n')
+
+
+def checked_command(args, timeout=2):
+    result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    if result.returncode:
+        raise RuntimeError((result.stderr or result.stdout or f'exit {result.returncode}').strip())
+    return result
+
+
+def reload_kitty(hex_color, token):
+    result = subprocess.run(
+        ['pgrep', '-u', str(os.getuid()), '-x', 'kitty'], capture_output=True, text=True, timeout=1)
+    if result.returncode not in (0, 1):
+        raise RuntimeError(result.stderr.strip())
+    for pid in result.stdout.split():
+        check_latest(token)
+        try:
+            os.kill(int(pid), signal.SIGUSR1)
+        except ProcessLookupError:
+            pass
+
+
+def update_border(hex_color, token):
+    border = f'{{ "rgba({hex_color}ee)", "rgba({hex_color}00)" }}'
+    lua = f"hl.config({{ general = {{ col = {{ active_border = {{ colors = {border}, angle = 45 }} }} }} }})"
+    checked_command(['hyprctl', 'eval', lua], timeout=1)
+
+
+def update_quickshell(hex_color, token):
+    checked_command(['qs', 'ipc', 'call', 'theme', 'setAccent', hex_color], timeout=1)
+
+
+def update_cursor(hex_color, token):
+    from sync_cursor import sync_color
+    sync_color(hex_color, force=True, is_current=lambda: is_latest(token))
+
+
+def update_rgb(hex_color, token):
+    checked_command([os.path.join(SCRIPT_DIR, 'openrgb_color.sh'), hex_color, token or ''], timeout=14)
+
+
+def update_neovim(hex_color, token):
+    errors = []
+    for sock in sorted(glob.glob(os.path.join(RUNTIME_DIR, 'nvim.*.0'))):
+        check_latest(token)
+        try:
+            checked_command(['nvim', '--server', sock, '--remote-expr', "v:lua.require'accent'.reload()"], timeout=2)
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+            errors.append(f'{sock}: {error}')
+    if errors:
+        raise RuntimeError('; '.join(errors))
+
+
+def run_target(name, action, hex_color, token):
+    started = time.monotonic()
+    try:
+        # Device scripts already have separate keyboard/mouse locks. An outer
+        # RGB lock would make the keyboard wait for a sleeping wireless mouse.
+        if name == 'rgb':
+            check_latest(token)
+            action(hex_color, token)
+        else:
+            with open(LOCK_FILE + '.' + name, 'a') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                check_latest(token)
+                for attempt in range(2):
+                    try:
+                        action(hex_color, token)
+                        break
+                    except (OSError, RuntimeError, subprocess.TimeoutExpired):
+                        if attempt:
+                            raise
+                        check_latest(token)
+                        time.sleep(0.08)
+        status = 'ok' if is_latest(token) else 'superseded'
+        error = None
+    except Superseded:
+        status, error = 'superseded', None
+    except Exception as exc:
+        status, error = 'error', str(exc)
+        log_message(f'{token} {name}: {error}')
+    return {'status': status, 'milliseconds': round((time.monotonic() - started) * 1000, 1), 'error': error}
+
+
+def publish_status(token, color, results):
+    # Check and publish under the same lock that registers new generations.
+    with open(LOCK_FILE + '.request', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if is_latest(token):
+            write_atomic(os.path.join(os.path.dirname(ACCENT_STATE), 'accent-sync.json'),
+                         json.dumps({'token': token, 'color': color, 'targets': results}, indent=2) + '\n')
+
+
+def apply(hex_color, token=None):
+    """Write settings briefly under one lock; update live targets independently."""
+    errors = []
+    try:
+        with open(LOCK_FILE, 'a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            check_latest(token)
+            os.makedirs(os.path.dirname(ACCENT_STATE), exist_ok=True)
+            write_atomic(ACCENT_STATE, hex_color + '\n')
+            errors = apply_files(hex_color, token)
+    except Superseded:
+        return
+    # The file lock is released before cursor generation, RGB acknowledgments,
+    # editor RPC or application IPC. A newer wallpaper never queues behind them.
+    actions = {
+        'kitty': reload_kitty, 'border': update_border,
+        'quickshell': update_quickshell, 'cursor': update_cursor,
+        'rgb': update_rgb, 'neovim': update_neovim,
+    }
+    results = {name: {'status': 'pending'} for name in actions}
+    results['settings'] = {'status': 'error' if errors else 'ok', 'errors': errors}
+    publish_status(token, hex_color, results)
+    with ThreadPoolExecutor(max_workers=len(actions)) as executor:
+        jobs = {executor.submit(run_target, name, action, hex_color, token): name
+                for name, action in actions.items()}
+        for future in as_completed(jobs):
+            results[jobs[future]] = future.result()
+            publish_status(token, hex_color, results)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sync Hyprland border and accents to the wallpaper color.")
-    parser.add_argument("image", nargs="?", help="wallpaper to analyze (default: current awww wallpaper)")
-    parser.add_argument("-d", "--dry-run", action="store_true", help="print the color without applying it")
+    parser = argparse.ArgumentParser(description='Sync desktop accents to the accepted wallpaper.')
+    parser.add_argument('image', nargs='?')
+    parser.add_argument('-d', '--dry-run', action='store_true')
+    parser.add_argument('--claim-token', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--token', help=argparse.SUPPRESS)
+    parser.add_argument('--warm-cache', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.claim_token:
+        print(claim_token())
+        return
+    if args.warm_cache:
+        if not args.image:
+            parser.error('--warm-cache requires an image')
+        extract_color_cached(args.image)
+        return
+    token = None if args.dry_run else (args.token or claim_token())
+    if not args.dry_run and not is_latest(token):
+        return
+    try:
+        image = args.image or current_wallpaper()
+        if image and not os.path.isfile(image):
+            raise FileNotFoundError(f'no such wallpaper: {image}')
+        # A daemon that is not ready must not overwrite a saved accent with grey.
+        if not image and not args.dry_run:
+            log_message(f'{token} wallpaper unavailable; kept the existing accent')
+            return
+        hex_color, reason = (extract_color(image) if args.dry_run else extract_color_cached(image)) if image else (PLATINUM, 'no wallpaper detected')
+        if args.dry_run:
+            print(f"{image or '-'}: #{hex_color} ({reason})")
+        else:
+            apply(hex_color, token)
+    except Exception as error:
+        if not args.dry_run:
+            log_message(f'{token} sync: {error}')
+        raise
 
-    token = None if args.dry_run else claim_token()
-    image = args.image or current_wallpaper()
-    if image and not os.path.isfile(image):
-        sys.exit(f"sync_border: no such file: {image}")
-    hex_color, reason = extract_color(image) if image else (PLATINUM, "no wallpaper detected")
 
-    if args.dry_run:
-        print(f"{image or '-'}: #{hex_color} ({reason})")
-    else:
-        with open(LOCK_FILE, "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            if is_latest(token):
-                apply(hex_color)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

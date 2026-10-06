@@ -24,7 +24,7 @@ Row {
     // to look up regardless; these map straight to a real theme icon name.
     property var appIdOverrides: [
         { key: "org.yazi.fm", icon: "yazi" },
-        { key: "cachy", icon: "system-software-update" },
+        { key: "cachy", icon: Quickshell.env("HOME") + "/.config/quickshell/assets/pacman.svg" },
     ]
 
     // Terminal emulators used on this system. Their toplevel appId never
@@ -150,6 +150,13 @@ Row {
                     const id = (modelData.appId || "").toLowerCase();
                     const isTerminal = taskbar.terminalAppIds.some(t => id.includes(t));
                     return taskbar.getAppIcon(isTerminal ? modelData.title : "", modelData.appId);
+                }
+
+                // Pacman remains yellow; pellets follow the live theme accent.
+                PacmanPellets {
+                    anchors.fill: parent
+                    visible: (modelData.appId || "").toLowerCase().includes("cachy")
+                             && parent.status === Image.Ready
                 }
 
                 // Fallback glyph when icon fails to load

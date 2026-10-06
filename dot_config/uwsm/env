@@ -1,0 +1,29 @@
+export XCURSOR_SIZE=20
+export HYPRCURSOR_SIZE=20
+# Bibata accent theme saved by sync_cursor.py.
+_bibata_theme=$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/hypr/cursor-theme" 2>/dev/null)
+case "$_bibata_theme" in
+    Bibata-Accent-??????) ;;
+    *) _bibata_theme=Bibata-Modern-Ice ;;
+esac
+export XCURSOR_THEME="$_bibata_theme"
+export HYPRCURSOR_THEME="$_bibata_theme"
+unset _bibata_theme
+
+export GDK_BACKEND="wayland,x11,*"
+export GDK_SCALE=1
+export QT_QPA_PLATFORM="wayland;xcb"
+export QT_QPA_PLATFORMTHEME=qt6ct
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
+
+export CLUTTER_BACKEND=wayland
+export SDL_VIDEODRIVER="wayland,x11"
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+export MOZ_ENABLE_WAYLAND=1
+
+# NVIDIA GPU Configuration
+export LIBVA_DRIVER_NAME=nvidia
+export GBM_BACKEND=nvidia-drm
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export NVD_BACKEND=direct
