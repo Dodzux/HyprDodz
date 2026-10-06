@@ -152,6 +152,8 @@ systemctl --user enable --now pipewire.socket pipewire-pulse.socket wireplumber.
 if command -v chezmoi &>/dev/null; then
     log_info "Applying chezmoi dotfiles..."
     chezmoi apply --force
+    # Preserve the custom directory modes captured with these personal configs.
+    python3 "$REPO_DIR/scripts/restore-config-permissions.py"
     log_success "Dotfiles applied."
 fi
 

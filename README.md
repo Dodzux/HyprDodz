@@ -1,181 +1,289 @@
-# Personal Hyprland dotfiles
+# HyprDodz — CachyOS Hyprland Dotfiles
 
-My active CachyOS/Arch desktop configuration, managed with chezmoi. Based on
-[BodzTH/hyprconfigs](https://github.com/BodzTH/hyprconfigs), updated with my own
-configs, themes, scripts, and keybindings.
+> My Hyprland desktop with QuickShell, Fish, Kitty, and accents that follow the wallpaper. Managed with **chezmoi** and modular **Lua** configs.
 
-## Desktop
+## Showcase
 
-| Component | Configuration |
-| --- | --- |
-| Compositor | Hyprland with modular Lua configs and host profiles |
-| Bar and panels | QuickShell: launcher, notifications, clipboard, wallpaper selector |
-| Terminal | Kitty; Ghostty config also included |
-| Shell | Fish with Starship |
-| Editor | Neovim with NvChad |
-| File manager | Yazi |
-| Browser | Brave |
-| Wallpaper | awww with wallpaper-derived accent colors |
-| Lock and idle | hyprlock and hypridle |
-| GTK/Qt | Graphite-Dark, Kvantum, qt6ct |
-| Cursor | Bibata-Modern-Ice with generated wallpaper accent variants |
+![HyprDodz desktop showcase](assets/screenshots/preview.png)
 
-The cursor base and the active Graphite theme assets are included. Generated
-cursor variants, wallpaper color state, caches, and app account data are not.
-Home paths, wallpaper accents, and the current generated cursor name are
-templated so they can follow the destination machine.
+[Quick start](#quick-start--reproduction) · [Desktop stack](#system--application-stack) · [Hardware profiles](#hardware-portability) · [Keybindings](#keybinding-highlights) · [Manage configs](#dotfiles-management) · [Coverage](#configuration-coverage--extra-settings)
 
-## Install on another machine
+---
 
-Personal repository: [Dodzux/HyprDodz](https://github.com/Dodzux/HyprDodz).
+## Quick Start & Reproduction
 
-```sh
+Start with a working **CachyOS or Arch-based installation**. This repository sets up the desktop, applications, themes, and SDDM greeter; the operating system and bootloader are installed separately.
+
+```bash
+# 1. Install chezmoi and Git
 sudo pacman -S --needed chezmoi git
+
+# 2. Download and apply my configs
+chezmoi init --apply Dodzux/HyprDodz
+
+# 3. Install packages, configure the greeter, and enable services
+~/.local/share/chezmoi/scripts/bootstrap.sh
+```
+
+Initialization asks for the display name used by the lock screen and greeter and detects the GPU vendor. Add `--promptDefaults` to the init command to accept the defaults.
+
+Bootstrap upgrades the system with `pacman -Syu`, installs the package manifests and the detected GPU stack, sets Fish as the default shell, installs the SDDM theme, applies the configs, restores the saved directory permissions, and links/enables the Hyprland session services. It can be run again when needed. Reboot afterward to use the configured session.
+
+**Brave is installed separately** (`brave-bin` on my machine); it is the browser configured for `SUPER + B`. The optional Codex shortcut requires your own `~/.local/bin/codex` installation. Their account data is not included.
+
+<details>
+<summary>Preview the configs before applying them</summary>
+
+```bash
 chezmoi init Dodzux/HyprDodz
 chezmoi diff
 chezmoi apply
 ~/.local/share/chezmoi/scripts/bootstrap.sh
-python3 ~/.local/share/chezmoi/scripts/restore-config-permissions.py
 ```
 
-Initialization asks for the name shown by the lock screen and greeter and
-detects the GPU vendor. Bootstrap upgrades the Arch-based system, installs
-the categorized package manifests, configures the SDDM greeter, applies the
-dotfiles, and enables session services. It does not configure a bootloader.
+</details>
 
-Brave (`brave-bin` on this machine) is installed separately; it is not in the
-official-repository package manifests. The optional Codex launcher expects a
-working `~/.local/bin/codex` installation and uses `~/Projects` by default.
-The launcher and desktop entry are included; the Codex installation and its
-account data are not.
+---
 
-Hardware profiles live in `~/.config/hypr/hosts/`. The loader selects a profile
-by hostname and uses `default.lua` when none matches. Existing desktop and
-laptop profiles are included; add a profile named after your new machine to
-customize displays, input devices, GPU settings, and optional apps.
+## System & Application Stack
 
-RGB scripts include support for the ASUS G614PH keyboard and Logitech G305,
-plus a generic OpenRGB fallback. Hardware updates require access to the
-relevant HID devices. `openrgb_color.sh.before-g614ph` is retained because the
-active RGB script executes it on other boards.
+| Component | Choice | Configuration |
+| --- | --- | --- |
+| Compositor | [Hyprland](https://hyprland.org/) | Modular Lua config with host profiles |
+| Greeter | [SDDM](https://github.com/sddm/sddm) | Custom `hypr-sddm` theme |
+| Bar & panels | [QuickShell](https://quickshell.org/) | Workspaces, system tray, launcher, clipboard, notifications, and wallpaper selector |
+| Terminal | [Kitty](https://sw.kovidgoyal.net/kitty/) | Default terminal; Ghostty config also included |
+| Shell | [Fish](https://fishshell.com/) + [Starship](https://starship.rs/) | Modular shell setup and my custom prompt |
+| Editor | [Neovim](https://neovim.io/) + [NvChad](https://nvchad.com/) | Lua settings, plugins, and language tooling |
+| File manager | [Yazi](https://yazi-rs.github.io/) | Terminal file manager |
+| Browser | [Brave](https://brave.com/) | Default browser and URL handler |
+| Wallpaper | [awww](https://github.com/awww-project/awww) | Animated wallpapers and transitions |
+| Lock & idle | hyprlock + hypridle | Lock screen, screen blanking, and DPMS |
+| GTK & Qt | Graphite-Dark, Kvantum, qt6ct | Dark theme and rounded UI styling |
+| Cursor | Bibata-Modern-Ice | Xcursor/Hyprcursor base with generated accent variants |
+| RGB | Custom scripts + OpenRGB fallback | ASUS G614PH keyboard and Logitech G305 helpers |
 
-## Configuration coverage
+### Wallpaper accents
 
-The repository also includes ordinary settings for OpenRGB, Micro, Inkscape,
-OBS, Discord, Obsidian, Shelly, KDE/Dolphin, Qalculate, Qt tools, Git, Bash,
-Zsh, default applications, systemd user links, and the installed theme assets.
+`~/.config/hypr/scripts/sync_border.py` updates the desktop accent when the wallpaper changes. The color is used by Hyprland, the lock screen, QuickShell, GTK/Qt, Kitty, Starship, Yazi, and supported RGB devices. `sync_cursor.py` creates a separate colored Bibata cursor theme.
 
-See [CONFIG-COVERAGE.md](CONFIG-COVERAGE.md) for the folder-by-folder comparison.
-The audit checks file contents and symlink destinations and detects new files
-that have never been added to chezmoi:
+Shared chezmoi templates read the current accent and cursor state under `~/.local/state/hypr/`, so restoring the configs keeps the current wallpaper colors. A new machine starts with the `#e5e5e5` accent and the Bibata-Modern-Ice base cursor.
 
-```sh
-python3 scripts/audit-configs.py --report CONFIG-COVERAGE.md
+Preview the color selected from an image:
+
+```bash
+~/.config/hypr/scripts/sync_border.py --dry-run ~/Pictures/Wallpapers/your-image.png
 ```
 
-Private browser/account profiles, authentication cookies, GitHub credentials,
-OBS WebSocket passwords, caches, generated cursor variants, logs, editor state,
-and old backup files stay local. Wallpapers over 100 MiB are excluded by
-request, including `hunt-showdown-death-roots.1920x1080_1.gif`.
+The theme and icon assets are included in the repository. Generated cursor copies are kept local.
 
-Some folders use permission mode `0751`, which chezmoi cannot encode with its
-standard attributes. The original modes are saved in
-`system/user/directory-permissions.json`. After applying the configs, restore
-those modes with `python3 scripts/restore-config-permissions.py` (add
-`--dry-run` to preview). Native `chezmoi status` can show those directory
-permission differences even when the supplemental snapshot matches.
-[Chezmoi permission limitations](https://www.chezmoi.io/user-guide/frequently-asked-questions/design/).
+---
 
-Selected ordinary Brave/Firefox preferences are saved separately in
-`system/user/browser-preferences.json`. This captures a subset of display,
-language, and related preferences; it does not reproduce a complete browser
-profile and is not applied automatically. Refresh that snapshot with:
+## Hardware Portability
 
-```sh
-python3 scripts/user_settings.py
+### Host profiles
+
+Hyprland loads a profile matching the machine hostname from `~/.config/hypr/hosts/`. When there is no matching profile, it uses `default.lua` with automatic monitor settings.
+
+```text
+~/.config/hypr/hosts/
+├── init.lua           # Hostname lookup and profile loader
+├── default.lua        # Fallback profile
+├── hyprcachyos.lua     # Existing desktop profile
+├── hyprdodz.lua        # Additional laptop profile
+└── laptop.lua         # Existing laptop profile
 ```
 
-GNOME/dconf preferences are saved as a text template in
-`system/user/dconf.ini.tmpl`. To restore that snapshot explicitly:
+To configure another machine, copy the default profile and edit its monitor, input, GPU, or app settings:
 
-```sh
-chezmoi execute-template < system/user/dconf.ini.tmpl | dconf load /
+```bash
+profile="$(cat /proc/sys/kernel/hostname)"
+cp ~/.config/hypr/hosts/default.lua ~/.config/hypr/hosts/"$profile".lua
+chezmoi add ~/.config/hypr/hosts/"$profile".lua
+chezmoi edit ~/.config/hypr/hosts/"$profile".lua
 ```
 
-## Track changes from the running desktop
+Alternatively, edit it directly in your editor and then run `chezmoi add`.
 
-To capture edits made directly in your active config files:
+### GPU and personal apps
 
-```sh
-chezmoi status
-chezmoi re-add
-git -C ~/.local/share/chezmoi diff
-```
+`chezmoi init` detects AMD, Intel, or NVIDIA hardware and saves the vendor in its machine-local configuration. Bootstrap selects the matching `80-gpu-*.txt` manifest. Re-run `chezmoi init` after changing GPUs.
 
-`re-add` skips templates and does not discover new files. Add new configs
-explicitly, and update templated files through `chezmoi edit` while retaining
-their template expressions:
+Host profiles can also specify GPU addresses and environment variables. The default profile leaves GPU selection automatic. Home paths are filled in by templates, while optional apps such as Codex are configured separately. The Codex launcher starts in `~/Projects` by default.
 
-```sh
-chezmoi add ~/.config/hypr/hosts/your-hostname.lua
-chezmoi edit ~/.config/kitty/kitty.conf
-```
+Hardware RGB helpers need access to the corresponding HID devices. The file `openrgb_color.sh.before-g614ph` is retained because the active script uses it as the generic OpenRGB fallback.
 
-Review with `chezmoi diff` before applying repository changes. Wallpaper sync
-updates the accent state and generated cursor theme; chezmoi templates read
-that state rather than saving a fixed wallpaper color.
+---
 
-## Publish to your own Git repository
+## Categorized Package Manifests
 
-This checkout points to `https://github.com/Dodzux/HyprDodz.git`. Review the
-changes before committing and pushing.
+Bootstrap reads the lists in `packages/`:
 
-```sh
-cd ~/.local/share/chezmoi
-git remote set-url origin https://github.com/Dodzux/HyprDodz.git
-git add .
-git diff --cached --stat
-git commit -m "Import my current desktop configs"
-git push -u origin HEAD
-```
-
-If Git asks for an identity, set `git config user.name` and
-`git config user.email` for this checkout before committing.
-
-## Repository layout
-
-| Path | Purpose |
+| Manifest | Purpose |
 | --- | --- |
-| `dot_config/` | Application configs, Hyprland scripts, and QuickShell UI |
-| `dot_local/` | Launcher, desktop entry, icons, cursor base, and GTK theme |
-| `Pictures/Wallpapers/` | Wallpaper collection |
-| `.chezmoitemplates/` | Shared accent and cursor state helpers |
-| `packages/` | Categorized package manifests inherited from the base setup |
-| `scripts/bootstrap.sh` | Arch-based installation and service setup |
-| `system/` | SDDM theme/config and bootloader reference files |
-| `assets/screenshots/` | Existing showcase images from the base repository |
+| `10-hyprland.txt` | Hyprland tools, QuickShell, SDDM, screen capture, and desktop daemons |
+| `20-apps.txt` | Applications including Neovim, Micro, OBS, Obsidian, Inkscape, and OpenRGB |
+| `30-shell.txt` | Fish, Git/GitHub CLI, Starship, Yazi, and command-line tools |
+| `40-terminals.txt` | Kitty and Ghostty |
+| `50-fonts.txt` | UI fonts, Noto, emoji, and Cascadia Code Nerd Font |
+| `60-audio-media.txt` | PipeWire, WirePlumber, ALSA, and media codecs |
+| `70-theming.txt` | GTK/Qt theming tools and supporting packages |
+| `80-gpu-amd.txt` / `80-gpu-intel.txt` / `80-gpu-nvidia.txt` | GPU packages; only the detected vendor is installed |
+| `90-networking.txt` | NetworkManager, Bluetooth, OpenSSH, and firewall tools |
+| `95-extra.txt` | Additional desktop utilities |
 
-`system/`, package manifests, scripts, and repository documentation are ignored
-by chezmoi's home-directory deployment. Bootstrap handles SDDM separately;
-the Limine files are reference material for the original machine.
+Brave and the Codex installation are outside these manifests. Additional app settings included in the snapshot do not imply that every corresponding application is installed by bootstrap.
 
-## Common keybindings
+---
+
+## Keybinding Highlights
 
 | Key | Action |
 | --- | --- |
-| `SUPER + T` | Kitty |
-| `SUPER + E` | Yazi |
-| `SUPER + B` | Brave |
-| `SUPER + C` | Neovim |
-| `SUPER + X` | Codex, when its launcher exists |
-| `SUPER + O` | Obsidian |
-| `SUPER + A` | App launcher |
+| `SUPER + T` | Open Kitty |
+| `SUPER + E` | Open Yazi |
+| `SUPER + B` | Open Brave |
+| `SUPER + C` | Open Neovim |
+| `SUPER + X` | Open Codex, when its launcher exists |
+| `SUPER + O` | Open Obsidian |
+| `SUPER + A` | Toggle app launcher |
 | `SUPER + F` | Focus the bar |
-| `SUPER + Space` | Wallpaper selector |
-| `SUPER + V` | Clipboard panel |
-| `SUPER + Backspace` | Power menu |
+| `SUPER + Space` | Toggle wallpaper selector |
+| `SUPER + V` | Toggle clipboard history |
+| `SUPER + H` | Open the keybinding cheatsheet |
+| `SUPER + Backspace` | Toggle power menu |
+| `SUPER + S` | Toggle scratchpad terminal |
+| `SUPER + N` | Toggle scratchpad notes |
 | `SUPER + Shift + W` | Change wallpaper and sync accents |
-| `SUPER + Print` | Update, commit, and push the showcase screenshot |
+| `SUPER + Shift + P` | Pick an RGB color from the screen |
+| `SUPER + L` | Lock the session |
+| `Print` | Open screenshot panel |
+| `F11` | Copy a selected screen region |
+| `SUPER + Print` | Capture and publish the README showcase |
 
-The showcase shortcut uses the checkout's configured Git remote. Configure
-your personal remote before using it.
+The full bindings are in [`modules/keybindings.lua`](dot_config/hypr/modules/keybindings.lua) and the desktop cheatsheet.
+
+---
+
+## System Files
+
+Chezmoi deploys the home-directory configs. Files that belong elsewhere are kept under `system/` and excluded from that deployment:
+
+```text
+system/
+├── etc/sddm.conf
+├── boot/limine.conf.header
+├── usr/share/sddm/themes/hypr-sddm/
+└── user/
+    ├── browser-preferences.json
+    ├── dconf.ini.tmpl
+    └── directory-permissions.json
+```
+
+Bootstrap installs the SDDM config/theme and copies its backgrounds from `Pictures/Wallpapers/`. The greeter header uses the display name provided during chezmoi initialization.
+
+The Limine file is reference material from the base setup. Bootstrap does not write to `/boot` or install a bootloader. The files under `system/user/` are supplemental personal settings, described below.
+
+---
+
+## Dotfiles Management
+
+```bash
+# Compare the running configs with the repository
+chezmoi status
+chezmoi diff
+
+# Pull edits from already tracked files into the repository
+chezmoi re-add
+
+# Add a new configuration file
+chezmoi add ~/.config/newapp/config
+
+# Edit a managed file, preserving its template expressions
+chezmoi edit ~/.config/kitty/kitty.conf
+
+# Apply the repository's configs to this machine
+chezmoi apply
+
+# Refresh the display name and GPU detection
+chezmoi init
+```
+
+`chezmoi re-add` skips templates and does not discover new files. Use `chezmoi edit` for templated settings and `chezmoi add` for new files.
+
+Check complete folder coverage, including files that have never been added:
+
+```bash
+cd ~/.local/share/chezmoi
+python3 scripts/audit-configs.py --report CONFIG-COVERAGE.md
+```
+
+Commit and push updates to [Dodzux/HyprDodz](https://github.com/Dodzux/HyprDodz):
+
+```bash
+cd ~/.local/share/chezmoi
+git add .
+git diff --cached --stat
+git commit -m "Update my desktop configs"
+git push
+```
+
+---
+
+## Updating the Showcase Screenshot
+
+Close all windows, then press **`SUPER + Print`**. [`scripts/showcase.sh`](scripts/showcase.sh) captures the focused monitor into `assets/screenshots/preview.png`, commits that image, and pushes it to the configured Git remote. It refuses to capture while any windows are open.
+
+The README displays that file directly, so updating the image updates the showcase. The screenshot commit contains only the preview image. GitHub authentication must already be configured for the push.
+
+---
+
+## Configuration Coverage & Extra Settings
+
+The repository also contains ordinary settings for OpenRGB, Micro, Inkscape, OBS, Discord, Obsidian, Shelly, KDE/Dolphin, Qalculate, Qt tools, Git, Bash, Zsh, default applications, and systemd user services. See the [coverage report](CONFIG-COVERAGE.md) for the folder comparison and recorded exceptions.
+
+Private account/browser profiles, authentication cookies, GitHub credentials, OBS WebSocket passwords, caches, generated cursor variants, logs, and old backups stay local. Wallpapers above 100 MiB are excluded, including `hunt-showdown-death-roots.1920x1080_1.gif`.
+
+### Custom directory permissions
+
+Some folders use `0751`, which chezmoi's standard attributes cannot encode. Their original modes are recorded in `system/user/directory-permissions.json` and restored by bootstrap. After running a standalone `chezmoi apply`, restore those modes explicitly:
+
+```bash
+python3 ~/.local/share/chezmoi/scripts/restore-config-permissions.py
+```
+
+Add `--dry-run` to preview. Native `chezmoi status` can show these permission differences even when the supplemental snapshot matches. The coverage report also records one malformed icon symlink that chezmoi normalizes.
+
+### Browser preferences and dconf
+
+`system/user/browser-preferences.json` holds selected ordinary Brave/Firefox display and language preferences. It is a partial settings snapshot, is not applied automatically, and contains no complete browser profile. Refresh it with:
+
+```bash
+python3 scripts/user_settings.py
+```
+
+GNOME/dconf settings are captured as a text template. Restore them explicitly with:
+
+```bash
+chezmoi execute-template < system/user/dconf.ini.tmpl | dconf load /
+```
+
+### Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `dot_config/` | App configs, Hyprland modules/scripts, and QuickShell UI |
+| `dot_local/` | Launchers, desktop entries, icons, cursors, and themes |
+| `dot_themes/` | GTK theme assets under `~/.themes` |
+| `Pictures/Wallpapers/` | Wallpapers and GIFs within the file-size limit |
+| `.chezmoitemplates/` | Shared accent and cursor templates |
+| `packages/` | Package lists used by bootstrap |
+| `scripts/` | Bootstrap, showcase capture, audits, and snapshot helpers |
+| `system/` | Greeter files, boot reference, and supplemental settings |
+| `assets/screenshots/` | Desktop showcase image |
+
+Names such as `dot_config`, `private_`, `executable_`, and `.tmpl` are chezmoi source attributes. Chezmoi converts them to the normal names when applying the configs.
+
+---
+
+Based on [BodzTH/hyprconfigs](https://github.com/BodzTH/hyprconfigs), adapted for my own desktop and configs.
