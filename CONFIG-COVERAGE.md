@@ -1,23 +1,23 @@
 # Configuration coverage
 
-Checked: 2026-10-06 23:17 UTC.
+Checked: 2026-10-07 00:18 UTC.
 
 This compares live configuration files and symlinks with chezmoi’s rendered state,
 and also searches for files that chezmoi does not manage. Source filenames such as
 `dot_config`, `private_`, `executable_`, and `.tmpl` encode deployment behavior;
 they are not expected to look identical to the live folder names.
 
-**51247 tracked entries checked; 0 content/link differences;
-0 unexplained missing entries.**
+**51246 tracked entries checked; 0 content/link differences;
+3 unexplained missing entries.**
 
-1 malformed live symlink target(s) are normalized by chezmoi; see below.
+0 malformed live symlink target(s) are normalized by chezmoi; see below.
 
 | Live folder/file | Tracked | Different | Captured separately | Excluded | Missing |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `.bash_logout` | 1 | 0 | 0 | 0 | 0 |
 | `.bash_profile` | 1 | 0 | 0 | 0 | 0 |
 | `.bashrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/BraveSoftware` | 0 | 0 | 0 | 4115 | 0 |
+| `.config/BraveSoftware` | 0 | 0 | 0 | 4118 | 0 |
 | `.config/Kvantum` | 6 | 0 | 0 | 0 | 0 |
 | `.config/OpenRGB` | 3 | 0 | 0 | 11 | 0 |
 | `.config/QtProject` | 1 | 0 | 0 | 0 | 0 |
@@ -38,7 +38,7 @@ they are not expected to look identical to the live folder names.
 | `.config/ghostty` | 3 | 0 | 0 | 0 | 0 |
 | `.config/gtk-3.0` | 3 | 0 | 0 | 0 | 0 |
 | `.config/gtk-4.0` | 4 | 0 | 0 | 0 | 0 |
-| `.config/hypr` | 44 | 0 | 0 | 30 | 0 |
+| `.config/hypr` | 43 | 0 | 0 | 30 | 1 |
 | `.config/inkscape` | 12 | 0 | 0 | 1 | 0 |
 | `.config/kdeglobals` | 1 | 0 | 0 | 0 | 0 |
 | `.config/kiorc` | 1 | 0 | 0 | 0 | 0 |
@@ -61,7 +61,7 @@ they are not expected to look identical to the live folder names.
 | `.config/shelly` | 2 | 0 | 0 | 0 | 0 |
 | `.config/starship.toml` | 1 | 0 | 0 | 0 | 0 |
 | `.config/starshipfork.toml` | 1 | 0 | 0 | 0 | 0 |
-| `.config/systemd` | 16 | 0 | 0 | 0 | 0 |
+| `.config/systemd` | 16 | 0 | 0 | 0 | 2 |
 | `.config/trashrc` | 1 | 0 | 0 | 0 | 0 |
 | `.config/user-dirs.dirs` | 1 | 0 | 0 | 0 | 0 |
 | `.config/uwsm` | 1 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 
 | Location | Entries | Reason |
 | --- | ---: | --- |
-| `.config/BraveSoftware` | 4115 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
+| `.config/BraveSoftware` | 4118 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
 | `.config/OpenRGB` | 10 | Application logs |
 | `.config/OpenRGB` | 1 | Previous configuration experiment/backup |
 | `.config/VirtualBox` | 25 | VirtualBox runtime registrations, logs, or backups |
@@ -102,6 +102,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 | `.config/fish` | 1 | Fish-generated universal-variable state |
 | `.config/gh` | 1 | GitHub authentication/account data |
 | `.config/hypr` | 20 | Application logs |
+| `.config/hypr` | 1 | Not managed and no exclusion applies |
 | `.config/hypr` | 6 | Previous configuration experiment/backup |
 | `.config/hypr` | 4 | Python bytecode cache |
 | `.config/inkscape` | 1 | Application log |
@@ -116,6 +117,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 | `.config/pulse` | 1 | PulseAudio authentication cookie |
 | `.config/quickshell` | 4 | Previous configuration experiment/backup |
 | `.config/session` | 1 | Restorable application session state |
+| `.config/systemd` | 2 | Not managed and no exclusion applies |
 | `.local/bin` | 1 | Installed Codex executable; launcher configuration is tracked |
 | `.local/share/applications` | 1 | Generated desktop-entry cache |
 | `.local/share/icons` | 615 | Generated wallpaper cursor variant; base theme is tracked |
@@ -127,11 +129,13 @@ None.
 
 ## Unexplained missing entries
 
-None.
+- `.config/hypr/hosts/Potat0Mac.lua`
+- `.config/systemd/user/graphical-session.target.wants/openrgb-server.service`
+- `.config/systemd/user/openrgb-server.service`
 
 ## Normalized symlink targets
 
-- `.local/share/icons/Tela-circle-black/scalable/apps/CherryStudio.svg`: live target contains surrounding whitespace and is broken; chezmoi strips that whitespace.
+None.
 
 ## Directory permissions
 
