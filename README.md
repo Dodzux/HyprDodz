@@ -61,7 +61,7 @@ chezmoi apply
 | Lock & idle | hyprlock + hypridle | Lock screen, screen blanking, and DPMS |
 | GTK & Qt | Graphite-Dark, Kvantum, qt6ct | Dark theme and rounded UI styling |
 | Cursor | Bibata-Modern-Ice | Xcursor/Hyprcursor base with generated accent variants |
-| RGB | Custom scripts + OpenRGB fallback | ASUS G614PH keyboard and Logitech G305 helpers |
+| RGB | Custom scripts + OpenRGB SDK | ASUS G614PH keyboard and Logitech G305 indicator |
 
 ### Wallpaper accents
 
@@ -112,6 +112,14 @@ Alternatively, edit it directly in your editor and then run `chezmoi add`.
 Host profiles can also specify GPU addresses and environment variables. The default profile leaves GPU selection automatic. Home paths are filled in by templates, while optional apps such as Codex are configured separately. The Codex launcher starts in `~/Projects` by default.
 
 Hardware RGB helpers need access to the corresponding HID devices. The file `openrgb_color.sh.before-g614ph` is retained because the active script uses it as the generic OpenRGB fallback.
+
+The G305 indicator uses the running OpenRGB SDK server on `127.0.0.1:6742`.
+Its wrapper disables local hardware detection, handles multiple G305 entries,
+and uses each entry's Static or Direct mode. It rejects stale wallpaper requests
+and checks CLI error messages even when OpenRGB returns exit code zero. No
+services are started or enabled by the mouse wrapper. Run its hardware-free
+regression checks with `python3 scripts/test-mouse-rgb.py`; the recorded checks
+and their limits are in [the verification report](assets/reports/mouse-rgb-verification.md).
 
 ---
 
