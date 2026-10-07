@@ -1,6 +1,6 @@
 # Configuration coverage
 
-Checked: 2026-10-07 11:10 UTC.
+Checked: 2026-10-07 11:16 UTC.
 
 This compares live configuration files and symlinks with chezmoi’s rendered state,
 and also searches for files that chezmoi does not manage. Source filenames such as
@@ -17,7 +17,7 @@ they are not expected to look identical to the live folder names.
 | `.bash_logout` | 1 | 0 | 0 | 0 | 0 |
 | `.bash_profile` | 1 | 0 | 0 | 0 | 0 |
 | `.bashrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/BraveSoftware` | 0 | 0 | 0 | 4120 | 0 |
+| `.config/BraveSoftware` | 0 | 0 | 0 | 4118 | 0 |
 | `.config/Kvantum` | 6 | 0 | 0 | 0 | 0 |
 | `.config/OpenRGB` | 3 | 0 | 0 | 11 | 0 |
 | `.config/QtProject` | 1 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 
 | Location | Entries | Reason |
 | --- | ---: | --- |
-| `.config/BraveSoftware` | 4120 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
+| `.config/BraveSoftware` | 4118 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
 | `.config/OpenRGB` | 10 | Application logs |
 | `.config/OpenRGB` | 1 | Previous configuration experiment/backup |
 | `.config/VirtualBox` | 25 | VirtualBox runtime registrations, logs, or backups |
