@@ -92,9 +92,8 @@ end
 -- hl.env("mesa_glthread", "true")           -- Mesa GL threading for OpenGL games
 -- hl.env("vk_xwayland_wait_ready", "false") -- skip XWayland VSync wait, cuts input latency
 
--- NOTE: AMD_VULKAN_ICD and LIBVA_DRIVER_NAME live in hosts/hyprcachyos.lua now.
---       They name a GPU vendor, and LIBVA_DRIVER_NAME=radeonsi on a non-AMD
---       host (an Intel laptop needs iHD) breaks VA-API hardware video decoding.
+-- Potat0Mac uses working automatic AMD/NVIDIA selection; vendor overrides
+-- belong in its host profile only when required by a verified driver problem.
 
 -- ▓▒░ HOST-SPECIFIC OVERRIDES
 -- Anything tied to one machine's hardware (e.g. AMD_VULKAN_ICD naming a GPU

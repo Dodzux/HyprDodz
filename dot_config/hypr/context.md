@@ -21,6 +21,23 @@ reading `/proc/<pid>/environ`.
 uwsm was removed on 2026-09-21. Do not reintroduce config outside `~/.config/hypr`.
 Systemd units live in `systemd/` here and are symlinked out by `scripts/bootstrap.sh`.
 
+## Current host: Potat0Mac
+
+This is the ASUS ROG Strix G16 G614PH (Ryzen 9, AMD Radeon 610M + NVIDIA
+RTX 5050). `hyprdodz` is the user, not the hostname. The active profile is
+`hosts/Potat0Mac.lua`: internal eDP-1 at 1920x1200/165 Hz, scale 1, plus automatic
+external displays. GPU and vendor environment selection remain automatic.
+Shared US/Arabic input and touchpad settings already apply. Do not restore the
+old Synaptics device override: this machine has an ASUS ASUF1205 touchpad.
+
+The unused desktop and laptop-template profiles were deliberately removed from
+both the live tree and chezmoi. Preserve that decision when syncing dotfiles.
+Codex has its own launcher, desktop identity, icon, notification hook and
+SUPER+X Apps entry. Brave is the browser; its normal window animations remain
+enabled, and hardware acceleration stays disabled because it caused display
+problems. Wallpaper transitions retain random effects and explicit active
+outputs, which avoid awww scanning obsolete output caches.
+
 ## Host portability
 
 One tree runs on multiple machines. `hosts/init.lua` reads the hostname from
@@ -35,8 +52,8 @@ into `modules/`, it belongs in the host profile instead.
 
 `AMD_VULKAN_ICD` and `LIBVA_DRIVER_NAME` were exactly that — they sat in
 `modules/environment.lua` until 2026-09-21, which would have handed an Intel laptop
-`LIBVA_DRIVER_NAME=radeonsi` and broken its hardware video decoding. They live in
-`hosts/hyprcachyos.lua` now. Only vendor-neutral Mesa driconf options stay in the
+`LIBVA_DRIVER_NAME=radeonsi` and broken its hardware video decoding. Only add them to a matching
+host profile when necessary; Potat0Mac does not force either variable. Only vendor-neutral Mesa driconf options stay in the
 module.
 
 Adding a machine = one new `hosts/<hostname>.lua` + run `scripts/bootstrap.sh`
@@ -59,8 +76,9 @@ touch that resolver, re-test it with a bogus address.
 
 ## Daemons are systemd units, not `exec_cmd`
 
-`quickshell`, `awww-daemon`, both `cliphist` watchers and `openrgb-server` are
-user units in `systemd/`, pulled in by `graphical-session.target`. They get `Restart=on-failure`
+`quickshell`, `awww-daemon` and both `cliphist` watchers are
+user units in `systemd/`, pulled in by `graphical-session.target`. The optional
+OpenRGB server remains disabled on Potat0Mac. They get `Restart=on-failure`
 and their own cgroups.
 
 ### Something must start `graphical-session.target` — Hyprland 0.56.2 does not
@@ -189,28 +207,29 @@ change rebuilt the whole shell. Now `Theme.accent` is a plain property set over
 IPC (~20ms, no reload), and the colour is persisted to
 `~/.local/state/hypr/accent`, which `Theme.qml` reads once at start.
 
-### OpenRGB goes through one helper and a server
+### Native RGB on Potat0Mac
 
-Every LED write goes through `scripts/openrgb_color.sh` — `sync_border.py` and
-`pick_rgb.fish` both call it. It talks to `openrgb-server.service` with
-`--nodetect`: a standalone `openrgb` call redid full hardware detection (~3.9s)
-and two overlapping calls fought over the same devices, which is why colours
-used to need several tries. It picks Static per device where available and
-Direct otherwise (a blanket `-m static` errors on Direct-only devices). Calls
-are serialised with `flock` and latest-wins. The CLI sends at ~33ms, then idles
-~1s before exiting; the helper backgrounds it (with the lock fd closed) and holds
-the lock only 150ms, so back-to-back changes take ~0.22s each instead of ~1.1s.
-Verified on the hardware by reading controller colours back over the SDK:
-bursts of three changes always left the last colour, never an earlier one.
+Every LED update goes through `scripts/openrgb_color.sh`, called by the wallpaper
+sync and color picker. On G614PH it runs the native keyboard and mouse helpers
+in parallel, with independent device locks, bounded retries and generation
+checks. The complete path measured about 0.21 seconds. No permanent RGB polling
+process or OpenRGB server is needed; do not re-enable the root or user server.
+The mouse hook defers if another OpenRGB process already owns the receiver.
+A sleeping wireless mouse can fail to acknowledge a write; startup retries are
+bounded and a failure must not be recorded as a successful color update.
 
-The Skyloong keyboard is **not** OpenRGB's: it has its own vendor software.
-Both Skyloong detectors are off in `~/.config/OpenRGB/OpenRGB.json`
-(`Detectors` → `"Skyloong GK104 Pro": false`), so OpenRGB never opens it and
-only the motherboard and G305 get the accent. That file is OpenRGB's own,
-outside this tree — re-toggle it there (or in the GUI's Settings → Supported
-Devices) if it is ever reset.
-The server opens its port ~3s before detection finishes, so the helper waits
-out the first 6s of the server's life (login only).
+`asus_keyboard_color.py` verifies the laptop and HID descriptors dynamically.
+It releases software control using feature report **6** and sends ASUS factory
+static-color packets. Report **5** is not the control report. Do not replace this
+with a persistent HID LampArray driver: that previously broke keyboard typing.
+Do not install asusctl; the user explicitly declined it for their dual-boot setup.
+`logitech_mouse_color.py` verifies the G305 receiver and HID++ 0x8070 V6 static
+effect layout; its capability cache lives in runtime storage and invalidates on
+device changes. Both helpers use only the Python standard library.
+
+`openrgb_color.sh.before-g614ph` is an **active fallback for other hardware**,
+despite its name. Keep it. Other `.before-*` files and the isolated OpenRGB
+experiment directories were unused and moved into a single recovery archive.
 
 Two consequences. First, **those files are rewritten at runtime** — a border/accent
 color you read there is not necessarily what the repo intends. Second, a config
@@ -222,8 +241,8 @@ reload re-applies `appearance.lua`'s static border and wipes it, which is why
 This machine isn't used for gaming, so gaming-only settings are **commented out in
 place**, each with a NOTE: `render.direct_scanout` (`modules/appearance.lua`),
 `cursor.no_break_fs_vrr` and `min_refresh_rate` (`modules/input.lua`), the Mesa
-`mesa_glthread` / `vk_xwayland_wait_ready` env (`modules/environment.lua`) and
-`DXVK_FILTER_DEVICE_NAME` (`hosts/hyprcachyos.lua`). Uncomment to bring them back.
+`mesa_glthread` / `vk_xwayland_wait_ready` env (`modules/environment.lua`) and optional
+per-host GPU overrides. Re-enable only the settings needed on that host.
 `misc.vrr = 3` stays on deliberately: mode 3 also covers fullscreen video, which mpv
 reports as content type `video`.
 

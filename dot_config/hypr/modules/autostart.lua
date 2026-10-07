@@ -14,7 +14,7 @@
 --   awww-daemon.service     wallpaper daemon
 --   cliphist-text.service   clipboard history — text
 --   cliphist-image.service  clipboard history — images
---   openrgb-server.service  OpenRGB SDK server (scripts/openrgb_color.sh)
+-- RGB uses one-shot native helpers on Potat0Mac; no OpenRGB server.
 --
 --   systemctl --user status quickshell    to check any of them
 --

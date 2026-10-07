@@ -1,20 +1,15 @@
--- Default Host Profile
--- Fallback settings when running on an unconfigured hostname
+-- Potat0Mac — ASUS ROG Strix G16 G614PH, Ryzen 9 + RTX 5050.
+-- Selected by the machine hostname; hyprdodz is the username.
 return {
     monitors = {
-        {
-            output   = "",
-            mode     = "preferred",
-            position = "auto",
-            scale    = 1,
-        },
+        { output = "eDP-1", mode = "1920x1200@165", position = "auto", scale = 1 },
+        { output = "", mode = "preferred", position = "auto", scale = 1 },
     },
-    -- Empty: let Aquamarine auto-detect GPUs. Correct default on unknown hardware.
-    gpu     = {},
-    env     = {},
-    -- Top-level `input` keys that differ on this machine, e.g.
-    --   input = { kb_layout = "us,de", kb_variant = ",nodeadkeys" },
-    input   = {},
-    apps    = {},
+    -- Automatic selection currently works for the AMD/NVIDIA hybrid GPUs.
+    gpu = {},
+    env = {},
+    -- The shared US/Arabic keyboard and touchpad settings already fit this laptop.
+    input = {},
+    apps = {},
     devices = {},
 }

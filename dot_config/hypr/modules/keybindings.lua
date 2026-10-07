@@ -49,7 +49,7 @@ end
 -- ▓▒░ APPLICATION LAUNCHER BINDINGS
 bind(m .. " + T", hl.dsp.exec_cmd(vars.terminal), { description = "Apps: Terminal (kitty)" })
 bind(m .. " + E", hl.dsp.exec_cmd(vars.fileManager), { description = "Apps: File manager (yazi)" })
-bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Firefox)" })
+bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Brave)" })
 bind(m .. " + C", hl.dsp.exec_cmd(vars.terminal_editor), { description = "Apps: Editor (Neovim)" })     -- kitty -e nvim (NvChad)
 bind(m .. " + O", hl.dsp.exec_cmd(vars.notingApp), { description = "Apps: Notes (Obsidian)" })
 bind(m .. " + D", hl.dsp.exec_cmd(vars.discord), { description = "Apps: Discord" })
@@ -147,11 +147,7 @@ bind(m .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true, description = 
 bind(m .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Windows: Resize window (drag)" })
 
 -- ▓▒░ MULTIMEDIA & BRIGHTNESS (laptop function keys)
--- NOTE: brightnessctl is NOT installed on hyprcachyos, so the two XF86MonBrightness
---       binds below are inert here. Kept deliberately — they are laptop function
---       keys and this one tree runs on both machines. `pacman -S brightnessctl`
---       on a host that has a backlight. Same for playerctl in the next block.
---       The wpctl binds work: wireplumber is installed.
+-- brightnessctl, playerctl and wpctl are installed on Potat0Mac.
 bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true, description = "Media: Volume up" })
 bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true, description = "Media: Volume down" })
 bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, description = "Media: Mute output" })
@@ -160,10 +156,6 @@ bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), 
 bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true, description = "Media: Brightness down" })
 
 -- ▓▒░ MEDIA CONTROL
--- NOTE: playerctl is NOT installed on hyprcachyos — these four are inert here.
---       Left in place for portability; `pacman -S playerctl` to activate them.
---       quickshell's bar does not shell out to playerctl, so nothing else covers
---       these keys in the meantime.
 bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true, description = "Media: Next track" })
 bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true, description = "Media: Play / pause" })
 bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true, description = "Media: Play / pause" })
