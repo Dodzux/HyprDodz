@@ -12,36 +12,38 @@
 
 ## Quick Start & Reproduction
 
-Start with a working **CachyOS or Arch-based installation**. This repository sets up the desktop, applications, themes, and SDDM greeter; the operating system and bootloader are installed separately.
+Start with a working **CachyOS or Arch installation** and restore the user
+configuration in stages. The private repository requires your own GitHub
+authentication; account credentials are never part of the dotfiles.
 
 ```bash
-# 1. Install chezmoi and Git
-sudo pacman -S --needed chezmoi git
+# Install Git and chezmoi yourself if they are missing:
+# sudo pacman -S --needed chezmoi git
 
-# 2. Download and apply my configs
-chezmoi init --apply Dodzux/HyprDodz
-
-# 3. Install packages, configure the greeter, and enable services
-~/.local/share/chezmoi/scripts/bootstrap.sh
-```
-
-Initialization asks for the display name used by the lock screen and greeter and detects the GPU vendor. Add `--promptDefaults` to the init command to accept the defaults.
-
-Bootstrap upgrades the system with `pacman -Syu`, installs the package manifests and the detected GPU stack, sets Fish as the default shell, installs the SDDM theme, applies the configs, restores the saved directory permissions, and links/enables the Hyprland session services. It can be run again when needed. Reboot afterward to use the configured session.
-
-**Brave is installed separately** (`brave-bin` on my machine); it is the browser configured for `SUPER + B`. The optional Codex shortcut requires your own `~/.local/bin/codex` installation. Their account data is not included.
-
-<details>
-<summary>Preview the configs before applying them</summary>
-
-```bash
+# Download only; inspect the changes before deployment.
 chezmoi init Dodzux/HyprDodz
-chezmoi diff
-chezmoi apply
-~/.local/share/chezmoi/scripts/bootstrap.sh
+chezmoi diff --exclude=scripts
+
+# Confirm each config change; defer automatic setup hooks.
+chezmoi apply --interactive --exclude=scripts
 ```
 
-</details>
+See [restoring on a new installation](assets/reports/restore-on-new-install.md)
+for package installation, desktop user units, wallpaper selection, and mouse
+permissions. Chezmoi restores the saved home-directory files; packages, device
+access, and a working graphical session must also be available.
+
+The existing `scripts/bootstrap.sh` performs a full system upgrade, GPU package
+installation, SDDM setup, shell changes, service enablement, and a forced config
+apply. Review it before choosing to run it. The staged restore above does not
+run that script or chezmoi setup hooks.
+
+Initialization asks for the display name used by the lock screen and greeter
+and detects the GPU vendor. Review these machine-local choices on a new host.
+
+**Brave is installed separately** (`brave-bin` on my machine); it is the browser
+configured for `SUPER + B`. The optional Codex shortcut requires your own
+`~/.local/bin/codex` installation. Their account data is not included.
 
 ---
 
@@ -61,7 +63,7 @@ chezmoi apply
 | Lock & idle | hyprlock + hypridle | Lock screen, screen blanking, and DPMS |
 | GTK & Qt | Graphite-Dark, Kvantum, qt6ct | Dark theme and rounded UI styling |
 | Cursor | Bibata-Modern-Ice | Xcursor/Hyprcursor base with generated accent variants |
-| RGB | Custom scripts + OpenRGB SDK | ASUS G614PH keyboard and Logitech G305 indicator |
+| RGB | Native HID helpers + OpenRGB fallback | ASUS G614PH keyboard and Logitech G305 indicator |
 
 ### Wallpaper accents
 
@@ -90,7 +92,7 @@ Hyprland loads a profile matching the machine hostname from `~/.config/hypr/host
 ├── init.lua           # Hostname lookup and profile loader
 ├── default.lua        # Fallback profile
 ├── hyprcachyos.lua     # Existing desktop profile
-├── hyprdodz.lua        # Additional laptop profile
+├── Potat0Mac.lua      # Saved automatic-settings profile
 └── laptop.lua         # Existing laptop profile
 ```
 
@@ -113,13 +115,19 @@ Host profiles can also specify GPU addresses and environment variables. The defa
 
 Hardware RGB helpers need access to the corresponding HID devices. The file `openrgb_color.sh.before-g614ph` is retained because the active script uses it as the generic OpenRGB fallback.
 
-The G305 indicator uses the running OpenRGB SDK server on `127.0.0.1:6742`.
-Its wrapper disables local hardware detection, handles multiple G305 entries,
-and uses each entry's Static or Direct mode. It rejects stale wallpaper requests
-and checks CLI error messages even when OpenRGB returns exit code zero. No
-services are started or enabled by the mouse wrapper. Run its hardware-free
-regression checks with `python3 scripts/test-mouse-rgb.py`; the recorded checks
-and their limits are in [the verification report](assets/reports/mouse-rgb-verification.md).
+The G305 indicator uses a one-shot native HID helper on the ASUS G614PH path.
+It verifies the receiver and lighting feature before writing, uses a three-second
+timeout, and only records success for the current wallpaper generation. If
+OpenRGB is already running, the update is deferred to avoid competing receiver
+access. Startup retries cover a mouse that wakes after the first accent update;
+there is no permanent polling loop. The Hyprland user-unit setup no longer
+includes the OpenRGB server, and importing these files does not stop an existing
+server. Other machines retain the generic OpenRGB fallback.
+
+Run the hardware-free checks with `python3 scripts/test-mouse-rgb.py`. The test
+runner supports both the native and earlier SDK wrappers; see the
+[upload verification report](assets/reports/native-mouse-upload-review.md) for
+this change and the limits of the checks.
 
 ---
 

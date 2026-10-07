@@ -71,6 +71,15 @@ hl.on("hyprland.start", function()
         done
         awww restore
         python3 "$HOME/.config/hypr/scripts/sync_border.py"
+        # A wireless mouse may wake after the first theme update. Retry only
+        # its lighting for a short startup window; no permanent polling loop.
+        runtime="${XDG_RUNTIME_DIR:-/tmp}"
+        for delay in 2 5 10 20; do
+            [ -s "$runtime/wallpaper-rgb.mouse.applied" ] && break
+            sleep "$delay"
+            read -r mouse_accent < "$HOME/.local/state/hypr/accent" || break
+            "$HOME/.config/hypr/scripts/openrgb_mouse_color.sh" "$mouse_accent" || true
+        done
     ']])
 end)
 

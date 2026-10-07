@@ -1,5 +1,9 @@
 # Mouse RGB verification — 2026-10-07
 
+> Historical SDK verification. The current G305 path uses the native HID
+> helper. See [the native upload review](native-mouse-upload-review.md) for
+> the updated configuration and its tests.
+
 The only live RGB configuration that differed from the existing chezmoi source
 was `~/.config/hypr/scripts/openrgb_mouse_color.sh`. Related wallpaper, cursor,
 keyboard, and accent scripts already matched their managed source files.
