@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Restore custom directory modes after chezmoi applies its standard modes.
+set -euo pipefail
+python3 {{ joinPath .chezmoi.sourceDir "scripts/restore-config-permissions.py" | quote }}

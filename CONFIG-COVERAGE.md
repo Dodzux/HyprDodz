@@ -1,14 +1,14 @@
 # Configuration coverage
 
-Checked: 2026-10-07 11:02 UTC.
+Checked: 2026-10-07 11:10 UTC.
 
 This compares live configuration files and symlinks with chezmoi’s rendered state,
 and also searches for files that chezmoi does not manage. Source filenames such as
 `dot_config`, `private_`, `executable_`, and `.tmpl` encode deployment behavior;
 they are not expected to look identical to the live folder names.
 
-**51241 tracked entries checked; 0 content/link differences;
-1 unexplained missing entries.**
+**51242 tracked entries checked; 0 content/link differences;
+0 unexplained missing entries.**
 
 0 malformed live symlink target(s) are normalized by chezmoi; see below.
 
@@ -17,7 +17,7 @@ they are not expected to look identical to the live folder names.
 | `.bash_logout` | 1 | 0 | 0 | 0 | 0 |
 | `.bash_profile` | 1 | 0 | 0 | 0 | 0 |
 | `.bashrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/BraveSoftware` | 0 | 0 | 0 | 4119 | 0 |
+| `.config/BraveSoftware` | 0 | 0 | 0 | 4120 | 0 |
 | `.config/Kvantum` | 6 | 0 | 0 | 0 | 0 |
 | `.config/OpenRGB` | 3 | 0 | 0 | 11 | 0 |
 | `.config/QtProject` | 1 | 0 | 0 | 0 | 0 |
@@ -61,7 +61,7 @@ they are not expected to look identical to the live folder names.
 | `.config/shelly` | 2 | 0 | 0 | 0 | 0 |
 | `.config/starship.toml` | 1 | 0 | 0 | 0 | 0 |
 | `.config/starshipfork.toml` | 1 | 0 | 0 | 0 | 0 |
-| `.config/systemd` | 16 | 0 | 0 | 0 | 1 |
+| `.config/systemd` | 17 | 0 | 0 | 0 | 0 |
 | `.config/trashrc` | 1 | 0 | 0 | 0 | 0 |
 | `.config/user-dirs.dirs` | 1 | 0 | 0 | 0 | 0 |
 | `.config/uwsm` | 1 | 0 | 0 | 0 | 0 |
@@ -91,7 +91,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 
 | Location | Entries | Reason |
 | --- | ---: | --- |
-| `.config/BraveSoftware` | 4119 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
+| `.config/BraveSoftware` | 4120 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
 | `.config/OpenRGB` | 10 | Application logs |
 | `.config/OpenRGB` | 1 | Previous configuration experiment/backup |
 | `.config/VirtualBox` | 25 | VirtualBox runtime registrations, logs, or backups |
@@ -114,7 +114,6 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 | `.config/pulse` | 1 | PulseAudio authentication cookie |
 | `.config/quickshell` | 4 | Previous configuration experiment/backup |
 | `.config/session` | 1 | Restorable application session state |
-| `.config/systemd` | 1 | Not managed and no exclusion applies |
 | `.local/bin` | 1 | Installed Codex executable; launcher configuration is tracked |
 | `.local/share/applications` | 1 | Generated desktop-entry cache |
 | `.local/share/icons` | 615 | Generated wallpaper cursor variant; base theme is tracked |
@@ -126,7 +125,7 @@ None.
 
 ## Unexplained missing entries
 
-- `.config/systemd/user/openrgb-server.service`
+None.
 
 ## Normalized symlink targets
 
@@ -136,7 +135,8 @@ None.
 
 These directories have custom permission modes that chezmoi cannot encode
 in source attributes. Their original modes are saved separately in
-`system/user/directory-permissions.json` and match the live folders.
+`system/user/directory-permissions.json`. The audit checks them against
+the live folders; mismatches appear under Separate snapshot checks.
 `chezmoi status` may still show permission differences for these paths.
 
 | Directory | Original mode |
@@ -162,18 +162,8 @@ python3 scripts/restore-config-permissions.py
 
 ## Separate snapshot checks
 
-- Directory mode differs from the separate snapshot: .config/gh
-- Directory mode differs from the separate snapshot: .config/inkscape
-- Directory mode differs from the separate snapshot: .config/inkscape/extensions
-- Directory mode differs from the separate snapshot: .config/inkscape/fontcollections
-- Directory mode differs from the separate snapshot: .config/inkscape/icons
-- Directory mode differs from the separate snapshot: .config/inkscape/keys
-- Directory mode differs from the separate snapshot: .config/inkscape/paint
-- Directory mode differs from the separate snapshot: .config/inkscape/palettes
-- Directory mode differs from the separate snapshot: .config/inkscape/symbols
-- Directory mode differs from the separate snapshot: .config/inkscape/templates
-- Directory mode differs from the separate snapshot: .config/inkscape/themes
-- Directory mode differs from the separate snapshot: .config/inkscape/ui
+Selected browser preferences match the live settings. The dconf text snapshot
+exists; this audit does not compare its content with the running dconf database.
 
 ## Run again
 

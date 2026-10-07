@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check configuration coverage, including files chezmoi does not manage yet."""
 import argparse
+import hashlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import fnmatch
@@ -11,6 +12,7 @@ import tarfile
 import tempfile
 import json
 import stat
+import sys
 
 from user_settings import browser_preferences
 
@@ -112,6 +114,42 @@ def group_for(relative):
     return parts[0]
 
 
+def config_template_is_current(repo):
+    templates = [repo / f'.chezmoi.{kind}.tmpl' for kind in ('json', 'toml', 'yaml')]
+    templates = [path for path in templates if path.is_file()]
+    if len(templates) != 1:
+        return False
+    result = subprocess.run(
+        ['chezmoi', '--source', str(repo), 'state', 'get',
+         '--bucket=configState', '--key=configState'],
+        capture_output=True, text=True,
+    )
+    if result.returncode:
+        return False
+    try:
+        saved_hash = json.loads(result.stdout)['configTemplateContentsSHA256']
+    except (ValueError, KeyError, TypeError):
+        return False
+    return hashlib.sha256(templates[0].read_bytes()).hexdigest() == saved_hash
+
+
+def render_archive(repo, archive_path):
+    # archive uses empty persistent state, so it can report a stale config
+    # template even immediately after init. Check real state before filtering
+    # that one warning; retain genuine stale-template warnings and other errors.
+    result = subprocess.run(
+        ['chezmoi', '--source', str(repo), 'archive', '--format=tar',
+         '--output', str(archive_path)],
+        stderr=subprocess.PIPE, text=True,
+    )
+    warning = 'chezmoi: warning: config file template has changed, run chezmoi init to regenerate config file'
+    current = config_template_is_current(repo) if warning in result.stderr else False
+    for line in result.stderr.splitlines():
+        if line != warning or not current:
+            print(line, file=sys.stderr)
+    result.check_returncode()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report', type=Path, help='Write the full Markdown coverage report here')
@@ -128,7 +166,7 @@ def main():
     # An archive renders templates without applying configs or running scripts.
     with tempfile.TemporaryDirectory(prefix='chezmoi-coverage-') as temporary:
         archive_path = Path(temporary) / 'rendered.tar'
-        subprocess.run(['chezmoi', '--source', str(repo), 'archive', '--format=tar', '--output', str(archive_path)], check=True)
+        render_archive(repo, archive_path)
         with tarfile.open(archive_path) as archive:
             members = {entry.name.rstrip('/'): entry for entry in archive.getmembers()}
             for path in live_entries(home):
@@ -218,7 +256,8 @@ def main():
     lines += ['', '## Directory permissions', '',
               'These directories have custom permission modes that chezmoi cannot encode',
               'in source attributes. Their original modes are saved separately in',
-              '`system/user/directory-permissions.json` and match the live folders.',
+              '`system/user/directory-permissions.json`. The audit checks them against',
+              'the live folders; mismatches appear under Separate snapshot checks.',
               '`chezmoi status` may still show permission differences for these paths.', '',
               '| Directory | Original mode |', '| --- | --- |']
     lines += [f'| `{path}` | `{mode}` |' for path, mode in sorted(permissions.items())]

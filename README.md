@@ -260,13 +260,13 @@ Private account/browser profiles, authentication cookies, GitHub credentials, OB
 
 ### Custom directory permissions
 
-Some folders use `0751`, which chezmoi's standard attributes cannot encode. Their original modes are recorded in `system/user/directory-permissions.json` and restored by bootstrap. After running a standalone `chezmoi apply`, restore those modes explicitly:
+Some folders use `0751`, which chezmoi's standard attributes cannot encode. Their original modes are recorded in `system/user/directory-permissions.json` and restored automatically after `chezmoi apply` and by bootstrap. To restore those modes manually:
 
 ```bash
 python3 ~/.local/share/chezmoi/scripts/restore-config-permissions.py
 ```
 
-Add `--dry-run` to preview. Native `chezmoi status` can show these permission differences even when the supplemental snapshot matches. The coverage report also records one malformed icon symlink that chezmoi normalizes.
+Add `--dry-run` to preview. Native `chezmoi status` can show these permission differences even when the supplemental snapshot matches. The coverage report lists any malformed symlink targets that chezmoi normalizes.
 
 ### Browser preferences and dconf
 
