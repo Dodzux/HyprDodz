@@ -1,6 +1,6 @@
 # Configuration coverage
 
-Checked: 2026-10-07 00:18 UTC.
+Checked: 2026-10-07 00:19 UTC.
 
 This compares live configuration files and symlinks with chezmoi’s rendered state,
 and also searches for files that chezmoi does not manage. Source filenames such as
