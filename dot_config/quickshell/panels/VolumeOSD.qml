@@ -1,10 +1,11 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Io
 import Quickshell.Services.Pipewire
 import qs
 
-// Volume / mute OSD — a pill at the bottom centre of the focused monitor that
+// Volume / mic / brightness OSD — a pill at the bottom centre of the focused monitor that
 // shows for 1.5s whenever the default output's or the default mic's level or
 // mute changes. The mic pill is the volume pill with a mic icon: same level
 // bar, same percentage, same "Mute". It reacts to PipeWire itself, not to key
@@ -16,8 +17,47 @@ Scope {
     property var sink: Pipewire.defaultAudioSink
     property var source: Pipewire.defaultAudioSource
 
-    // Which device the pill is describing right now: "sink" or "source".
+    // Which device the pill is describing: sink, source, or brightness.
     property string kind: "sink"
+
+    property real brightnessLevel: 0
+    property bool brightnessPending: false
+
+    // Read only on a brightness-key request. Coalesce repeats while a read is
+    // running so the last keypress is reflected without starting a poller.
+    function requestBrightness() {
+        if (brightnessRead.running) {
+            brightnessPending = true;
+        } else {
+            brightnessRead.running = true;
+        }
+    }
+
+    IpcHandler {
+        target: "brightness"
+        function showBrightness(): void { osd.requestBrightness(); }
+        function status(): string { return osd.kind + ":" + Math.round(osd.brightnessLevel * 100) + ":" + osdWindow.visible; }
+    }
+
+    Process {
+        id: brightnessRead
+        command: ["brightnessctl", "-c", "backlight", "-m"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var fields = this.text.trim().split(",");
+                var percentage = Number((fields[3] || "").replace("%", ""));
+                if (fields[1] !== "backlight" || !/%$/.test(fields[3] || "") || !isFinite(percentage)) return;
+                osd.brightnessLevel = Math.max(0, Math.min(100, percentage)) / 100;
+                osd.show("brightness");
+            }
+        }
+        onExited: {
+            if (osd.brightnessPending) {
+                osd.brightnessPending = false;
+                Qt.callLater(osd.requestBrightness);
+            }
+        }
+    }
 
     // Node properties settle during the first moments after startup (and after
     // a default-device switch), which would otherwise flash the OSD with no
@@ -28,7 +68,7 @@ Scope {
     onSourceChanged: { armed = false; armTimer.restart(); }
 
     function show(which) {
-        if (!armed) return;
+        if (!armed && which !== "brightness") return;
         kind = which;
         var scr = root.getFocusedScreen();
         if (scr) osdWindow.screen = scr;
@@ -72,9 +112,9 @@ Scope {
         // Never intercept the pointer — it sits over whatever is below.
         mask: Region {}
 
-        readonly property var node: osd.kind === "sink" ? osd.sink : osd.source
+        readonly property var node: osd.kind === "brightness" ? null : (osd.kind === "sink" ? osd.sink : osd.source)
         readonly property bool muted: node && node.audio ? node.audio.muted : false
-        readonly property real level: node && node.audio ? Math.min(1, node.audio.volume) : 0
+        readonly property real level: osd.kind === "brightness" ? osd.brightnessLevel : (node && node.audio ? Math.min(1, node.audio.volume) : 0)
 
         Rectangle {
             anchors.fill: parent
@@ -94,6 +134,7 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 22
                     text: {
+                        if (osd.kind === "brightness") return "󰃠";
                         if (osd.kind === "source") return osdWindow.muted || osdWindow.level === 0 ? "󰍭" : "󰍬";
                         if (osdWindow.muted || osdWindow.level === 0) return "󰖁";
                         return osdWindow.level >= 0.5 ? "󰕾" : "󰖀";
@@ -103,7 +144,7 @@ Scope {
                     font.pixelSize: 18
                 }
 
-                // Level bar — output volume or mic level, the same way.
+                // Shared level bar for output, mic, and brightness.
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 22 - 44 - parent.spacing * 2

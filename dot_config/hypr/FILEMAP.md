@@ -41,6 +41,7 @@ Potat0Mac keeps the working automatic AMD/NVIDIA GPU selection.
 | `bootstrap.sh` | Links user units and enables the required desktop services; excludes OpenRGB |
 | `awww_transition.sh` | Random transitions on explicit active outputs, then generation-aware theme sync |
 | `sync_border.py` | Cached wallpaper analysis and latest-generation updates across theme targets |
+| `opencode-wallpaper.json.in` | Native OpenCode dark theme template with wallpaper UI accents and transparent main background |
 | `sync_cursor.py` | Cached Bibata cursor accent generation |
 | `openrgb_color.sh` | Parallel native G614PH keyboard and mouse updates |
 | `openrgb_mouse_color.sh` | Serialized, bounded one-shot native mouse update |
@@ -50,6 +51,7 @@ Potat0Mac keeps the working automatic AMD/NVIDIA GPU selection.
 | `pick_rgb.fish` | Screen color picker calling the same RGB path |
 | `build_gtk_theme.py` | Manual rebuild of the Graphite GTK theme for runtime accents |
 | `gaming-mode.sh` | Existing optional gaming helper |
+| `screenshot_region.sh` | F11/F12 region capture with cancellation and temporary image cleanup |
 
 ## Services and tool configs
 

@@ -220,6 +220,7 @@ PanelWindow {
                 antialiasing: true
                 required property var modelData
                 required property int index
+                readonly property bool highlighted: appList.currentIndex === index || rowHover.hovered
 
                 color: appList.currentIndex === index
                     ? Theme.bgSelection
@@ -249,7 +250,7 @@ PanelWindow {
                         Text {
                             anchors.centerIn: parent
                             text: "󰣆"
-                            color: Theme.subtext0
+                            color: appRow.highlighted ? Theme.accent : Theme.subtext0
                             font.family: Theme.fontMain
                             font.pixelSize: 20
                             visible: parent.status !== Image.Ready
@@ -263,7 +264,8 @@ PanelWindow {
 
                         Text {
                             text: appRow.modelData.name
-                            color: Theme.text
+                            color: appRow.highlighted ? Theme.accent : Theme.text
+                            Behavior on color { ColorAnimation { duration: 80 } }
                             font.family: Theme.fontMain
                             font.pixelSize: 13
                             font.weight: Font.Medium
@@ -274,7 +276,8 @@ PanelWindow {
 
                         Text {
                             text: appRow.modelData.comment || appRow.modelData.genericName || ""
-                            color: Theme.subtext0
+                            color: appRow.highlighted ? Theme.accent : Theme.subtext0
+                            Behavior on color { ColorAnimation { duration: 80 } }
                             font.family: Theme.fontMain
                             font.pixelSize: 11
                             Layout.fillWidth: true
@@ -287,7 +290,7 @@ PanelWindow {
                     // Terminal indicator
                     Text {
                         text: ""
-                        color: Theme.subtext0
+                        color: appRow.highlighted ? Theme.accent : Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 12
                         visible: appRow.modelData.runInTerminal

@@ -1,38 +1,13 @@
 #!/bin/sh
-# Focus Codex if open, otherwise resume the last chat. Optional arguments open
-# a separate window, and an optional first folder changes the working directory.
+# Open Codex in its own window. An explicit first folder overrides the default.
 set -eu
-
-# Only a normal launcher click reuses a window; explicit arguments are honored.
-if [ "$#" -eq 0 ]; then
-    codex_address=$(
-        hyprctl -j clients 2>/dev/null | python3 -c '
-import json, re, sys
-try:
-    clients = json.load(sys.stdin)
-    windows = [c for c in clients if c.get("class") == "codex"
-               and c.get("mapped", True)
-               and re.fullmatch(r"0x[0-9a-fA-F]+", c.get("address", ""))]
-    windows.sort(key=lambda c: c.get("focusHistoryID", -1)
-                 if c.get("focusHistoryID", -1) >= 0 else 10**9)
-    if windows:
-        print(windows[0]["address"])
-except (ValueError, TypeError, AttributeError):
-    pass
-' 2>/dev/null
-    ) || codex_address=
-    if [ -n "$codex_address" ]; then
-        if hyprctl dispatch "hl.dsp.focus({ window = \"address:$codex_address\" })" >/dev/null 2>&1; then
-            exit 0
-        fi
-    fi
-fi
 
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
     cd -- "$1"
     shift
 else
-    cd -- {{ .chezmoi.homeDir }}/Projects
+    mkdir -p -- "$HOME/Codex"
+    cd -- "$HOME/Codex"
 fi
 
 if [ "$#" -eq 0 ]; then
@@ -41,4 +16,4 @@ fi
 
 exec /usr/bin/kitty --detach --class=codex --title=Codex \
     --working-directory="$PWD" \
-    {{ .chezmoi.homeDir }}/.local/bin/codex "$@"
+    "$HOME/.local/bin/codex-accent" "$HOME/.local/bin/codex" "$@"
