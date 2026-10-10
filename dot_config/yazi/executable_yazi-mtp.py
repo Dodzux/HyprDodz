@@ -49,10 +49,10 @@ def get_mtp_devices() -> list[dict[str, any]]:
         
     return mtp_volumes
 
-def notify(summary: str, body: str = "", icon: str = "phone") -> None:
+def notify(summary: str, body: str = "") -> None:
     """Send a desktop notification using notify-send."""
     try:
-        subprocess.run(["notify-send", "-i", icon, summary, body])
+        subprocess.run(["notify-send", "-a", "Yazi", "-i", "yazi", "-h", "string:desktop-entry:yazi", summary, body])
     except Exception:
         pass
 
@@ -69,7 +69,7 @@ def mount_all() -> bool:
     """Mount all detected MTP devices and navigate Yazi to their mount path."""
     volumes = get_mtp_devices()
     if not volumes:
-        notify("MTP Mount", "No phone/MTP device detected.", icon="phone")
+        notify("MTP Mount", "No phone/MTP device detected.")
         return False
 
     uid = os.getuid()
@@ -116,17 +116,17 @@ def mount_all() -> bool:
             
             # Notify user to unlock and tap 'Allow' after 1 second if not yet authorized
             if attempt == 1 and not prompt_shown:
-                notify("MTP Mount", f"Action Required: Please unlock {name} and tap 'Allow' to authorize access.", icon="phone")
+                notify("MTP Mount", f"Action Required: Please unlock {name} and tap 'Allow' to authorize access.")
                 prompt_shown = True
             
             time.sleep(1)
             
         if authorized:
-            notify("MTP Mount", f"Successfully mounted {name}.", icon="phone")
+            notify("MTP Mount", f"Successfully mounted {name}.")
             change_yazi_dir(mount_path)
             mounted_any = True
         else:
-            notify("MTP Mount", f"Mount timed out: Please unlock {name} and authorize access.", icon="dialog-error")
+            notify("MTP Mount", f"Mount timed out: Please unlock {name} and authorize access.")
             
     if not mounted_any:
         change_yazi_dir(f"/run/user/{uid}/gvfs")
@@ -139,21 +139,21 @@ def unmount_all() -> None:
     mounted_volumes = [v for v in volumes if v["is_mounted"]]
     
     if not mounted_volumes:
-        notify("MTP Unmount", "No mounted phone/MTP device found.", icon="phone")
+        notify("MTP Unmount", "No mounted phone/MTP device found.")
         return
 
     for vol in mounted_volumes:
         name = vol["name"]
         root = vol["activation_root"]
-        notify("MTP Unmount", f"Unmounting {name}...", icon="phone")
+        notify("MTP Unmount", f"Unmounting {name}...")
         try:
             res = subprocess.run(["gio", "mount", "-u", root], capture_output=True, text=True)
             if res.returncode == 0:
-                notify("MTP Unmount", f"Successfully unmounted {name}.", icon="phone")
+                notify("MTP Unmount", f"Successfully unmounted {name}.")
             else:
-                notify("MTP Unmount", f"Failed to unmount {name}: {res.stderr.strip()}", icon="dialog-error")
+                notify("MTP Unmount", f"Failed to unmount {name}: {res.stderr.strip()}")
         except Exception as e:
-            notify("MTP Unmount", f"Failed to unmount {name}: {str(e)}", icon="dialog-error")
+            notify("MTP Unmount", f"Failed to unmount {name}: {str(e)}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

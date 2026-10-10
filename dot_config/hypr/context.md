@@ -174,6 +174,14 @@ calls `require'accent'.reload()` in each `$XDG_RUNTIME_DIR/nvim.*.0` socket to
 recompile base46's cache; a new nvim recompiles at startup if the cache is stale. Group borders are
 deliberately not synced — group theming is archived (see below).
 
+OpenCode uses `opencode-wallpaper`, a native dark theme based on the built-in
+OpenCode theme. `scripts/opencode-wallpaper.json.in` preserves syntax/feedback
+colours, makes the main background transparent and keeps raised/dialog surfaces
+dark for readability. `sync_border.py` renders its wallpaper-accent palette into
+the global OpenCode themes directory and sends `SIGUSR2` only to interactive
+clients with a registered handler, never the background service. Track the
+template, not the generated JSON. Terminal colours and opacity are independent.
+
 The colour is picked by a chroma²-weighted hue histogram, so a small vivid accent
 beats a large dull backdrop. The earlier count-weighted scorer turned muted
 bluish-grey backgrounds into a steel blue that appeared nowhere in the image.

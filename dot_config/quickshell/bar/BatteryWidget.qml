@@ -6,9 +6,16 @@ BarItem {
     id: batteryWidget
 
     readonly property var bat: Up.UPower.displayDevice
-    readonly property bool hasBat: bat ? bat.isPresent : false
-    readonly property bool onBat: Up.UPower.onBattery
-    readonly property int batPct: bat ? Math.round(bat.percentage) : 0
+    readonly property bool hasBat: bat ? bat.ready && bat.isPresent : false
+    readonly property bool pluggedIn: !Up.UPower.onBattery
+    readonly property int batPct: hasBat ? Math.round(Math.max(0, Math.min(1, bat.percentage)) * 100) : 0
+
+    readonly property string batteryGlyph: {
+        if (!hasBat) return "󰂎"
+        if (pluggedIn) return "󰚥";
+        var levels = ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"];
+        return levels[Math.ceil(batPct / 10)];
+    }
 
     width: contentRow.implicitWidth + 16
     
@@ -29,14 +36,11 @@ BarItem {
             id: batteryIcon
             anchors.verticalCenter: parent.verticalCenter
             verticalAlignment: Text.AlignVCenter
-            color: onBat ? Theme.text : Theme.success
+            color: pluggedIn ? Theme.success : Theme.text
             font.family: Theme.fontMain
             font.pixelSize: 14
             renderType: Text.NativeRendering
-            text: {
-                if (!hasBat) return "󰂎"
-                return onBat ? "󰁾" : "󰂄"
-            }
+            text: batteryWidget.batteryGlyph
         }
 
         Text {

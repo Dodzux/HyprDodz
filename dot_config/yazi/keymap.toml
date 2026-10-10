@@ -6,7 +6,7 @@
 [[mgr.prepend_keymap]]
 on   = [ "y" ]
 run  = [
-    '''shell -- for path in %s; do echo "file://$path"; done | wl-copy -t text/uri-list 2>/dev/null; notify-send "Yazi" "Copied to clipboard"''',
+    '''shell -- for path in %s; do echo "file://$path"; done | wl-copy -t text/uri-list 2>/dev/null; notify-send -a Yazi -i yazi -h string:desktop-entry:yazi "Yazi" "Copied to clipboard"''',
     "copy path",
     "yank"
 ]
@@ -15,7 +15,7 @@ desc = "Yank and copy files to system clipboard"
 # Paste screenshot/image from system clipboard (Wayland)
 [[mgr.prepend_keymap]]
 on   = [ "<C-v>" ]
-run  = '''shell -- wl-paste -l | grep -q "^image/" && wl-paste -t image/png > "screenshot_$(date +%%Y%%m%%d_%%H%%M%%S).png" && notify-send "Yazi" "Screenshot pasted" || notify-send "Yazi" "No image in clipboard"'''
+run  = '''shell -- wl-paste -l | grep -q "^image/" && wl-paste -t image/png > "screenshot_$(date +%%Y%%m%%d_%%H%%M%%S).png" && notify-send -a Yazi -i yazi -h string:desktop-entry:yazi "Yazi" "Screenshot pasted" || notify-send -a Yazi -i yazi -h string:desktop-entry:yazi "Yazi" "No image in clipboard"'''
 desc = "Paste screenshot/image from system clipboard"
 
 # Trash selected files (recoverable)
@@ -54,7 +54,7 @@ desc = "Extract archive here"
 # Compress selection to zip
 [[mgr.prepend_keymap]]
 on   = [ "C" ]
-run  = 'shell --block -- 7z a "$(basename "%s1").zip" %s && notify-send "Archive Created" "Finished zipping $(basename "%s1")" || notify-send "Archive Failed" "Failed to zip $(basename "%s1")"'
+run  = 'shell --block -- 7z a "$(basename "%s1").zip" %s && notify-send -a Yazi -i yazi -h string:desktop-entry:yazi "Archive Created" "Finished zipping $(basename "%s1")" || notify-send -a Yazi -i yazi -h string:desktop-entry:yazi "Archive Failed" "Failed to zip $(basename "%s1")"'
 desc = "Compress selected files to .zip archive"
 
 # ─── Terminal & App Launchers ──────────────────────────────────────────────────

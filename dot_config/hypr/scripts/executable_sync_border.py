@@ -137,6 +137,21 @@ def on_accent(hex_color):
     return "111111" if (r * 299 + g * 587 + b * 114) / 1000 >= 156 else "ffffff"
 
 
+def codex_palette(hex_color):
+    """Readable code colors related to the wallpaper hue, on a dark surface."""
+    rgb = [int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    hue, _, saturation = colorsys.rgb_to_hls(*rgb)
+    if max(rgb) - min(rgb) < 0.08:
+        saturation = 0.0
+    saturation = min(saturation, 0.65)
+    roles = ((16, 0, 0.68, 1.0), (17, 0, 0.82, 0.45),
+             (18, -28, 0.73, 0.8), (19, 24, 0.76, 0.8),
+             (20, 52, 0.75, 0.75), (21, -52, 0.75, 0.65))
+    return {str(slot): "".join(f"{round(channel * 255):02x}" for channel in
+                colorsys.hls_to_rgb((hue + offset / 360) % 1, lightness, saturation * factor))
+            for slot, offset, lightness, factor in roles}
+
+
 def shift_lightness(hex_color, dl):
     """The accent with its HLS lightness moved by dl (clamped to 0..1)."""
     rgb = [int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4)]
@@ -264,6 +279,11 @@ def apply_files(hex_color, token):
         (r'^accent2[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent2 = "#{companion(hex_color)}"'),
     ])
     rewrite("~/.config/kitty/kitty.conf", [
+        # Custom Codex syntax and UI accents update live in Kitty.
+        (r"^color4[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"color4  #{hex_color}"),
+        (r"^color12[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"color12 #{hex_color}"),
+        *[(rf"^color{slot}[ \t]+#[0-9a-fA-F]{{6}}[ \t]*$", f"color{slot} #{color}")
+          for slot, color in codex_palette(hex_color).items()],
         (r"^cursor[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"cursor                  #{hex_color}"),
         (r"^selection_background[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_background    #{hex_color}"),
         (r"^selection_foreground[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_foreground    #{fg}"),
@@ -272,6 +292,24 @@ def apply_files(hex_color, token):
         (rf'^(.*\b{key} = ")#[0-9a-fA-F]{{6}}(".*#\s*accent: {key}\s*)$', rf"\g<1>#{hex_color}\g<2>")
         for key in ("fg", "bg")
     ])
+    # A native OpenCode theme, not terminal palette overrides. Keep its syntax
+    # and feedback colours fixed; only UI accents follow the wallpaper.
+    opencode_config = os.path.join(
+        os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "opencode")
+    try:
+        check_latest(token)
+        os.makedirs(os.path.join(opencode_config, "themes"), exist_ok=True)
+        render(os.path.join(SCRIPT_DIR, "opencode-wallpaper.json.in"),
+               os.path.join(opencode_config, "themes", "opencode-wallpaper.json"), {
+                   "ON_ACCENT": f"#{fg}",
+                   **{f"ACCENT_{step}": f"#{shift_lightness(hex_color, delta)}"
+                      for step, delta in ((100, 0.10), (200, 0), (300, -0.08),
+                                          (400, -0.16), (500, -0.24), (600, -0.32),
+                                          (700, -0.40), (800, -0.48), (900, -0.56))},
+               })
+    except OSError as error:
+        errors.append(f'OpenCode theme: {error}')
+        log_message(f'{token} settings: OpenCode theme: {error}')
     return errors
 
 class Superseded(Exception):
@@ -353,6 +391,32 @@ def reload_kitty(hex_color, token):
         try:
             os.kill(int(pid), signal.SIGUSR1)
         except ProcessLookupError:
+            pass
+
+
+def reload_opencode(hex_color, token):
+    # OpenCode v2's SIGUSR2 handler re-discovers custom theme files. Only signal
+    # interactive clients that have installed it, never the background service.
+    result = subprocess.run(
+        ['pgrep', '-u', str(os.getuid()), '-x', 'opencode'], capture_output=True, text=True, timeout=1)
+    if result.returncode not in (0, 1):
+        raise RuntimeError(result.stderr.strip())
+    for pid in result.stdout.split():
+        check_latest(token)
+        try:
+            if not all(os.readlink(f'/proc/{pid}/fd/{fd}').startswith('/dev/pts/') for fd in (0, 1)):
+                continue
+            with open(f'/proc/{pid}/cmdline', 'rb') as stream:
+                args = stream.read().split(b'\0')[1:]
+            if any(arg in (b'serve', b'service', b'run', b'api') for arg in args):
+                continue
+            with open(f'/proc/{pid}/status') as stream:
+                caught = re.search(r'^SigCgt:\s*([0-9a-fA-F]+)$', stream.read(), re.MULTILINE)
+            if not caught or not int(caught[1], 16) & (1 << (signal.SIGUSR2 - 1)):
+                continue
+            check_latest(token)
+            os.kill(int(pid), signal.SIGUSR2)
+        except (FileNotFoundError, ProcessLookupError):
             pass
 
 
@@ -445,6 +509,7 @@ def apply(hex_color, token=None):
         'kitty': reload_kitty, 'border': update_border,
         'quickshell': update_quickshell, 'cursor': update_cursor,
         'rgb': update_rgb, 'neovim': update_neovim,
+        'opencode': reload_opencode,
     }
     results = {name: {'status': 'pending'} for name in actions}
     results['settings'] = {'status': 'error' if errors else 'ok', 'errors': errors}

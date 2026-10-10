@@ -92,9 +92,9 @@ color10 #87af87
 color3  #dfaf87
 color11 #dfaf87
 
-# Blue (Muted)
-color4  #87afaf
-color12 #87afaf
+# Blue: desktop accent for Codex UI highlights
+color4                  #{{ template "accent" . }}
+color12                 #{{ template "accent" . }}
 
 # Magenta (Muted)
 color5  #af87af
@@ -103,6 +103,17 @@ color13 #af87af
 # Cyan (Muted)
 color6  #87afd7
 color14 #87afd7
+
+# Desktop Accent: keywords, variables, functions, types, numbers, strings.
+{{- $accent := includeTemplate "accent" . -}}
+{{- $script := joinPath .chezmoi.sourceDir "dot_config/hypr/scripts/executable_sync_border.py" -}}
+{{- $palette := (output "python3" "-B" "-c" "import json,runpy,sys; print(json.dumps(runpy.run_path(sys.argv[1])['codex_palette'](sys.argv[2])))" $script $accent) | fromJson }}
+color16 #{{ index $palette "16" }}
+color17 #{{ index $palette "17" }}
+color18 #{{ index $palette "18" }}
+color19 #{{ index $palette "19" }}
+color20 #{{ index $palette "20" }}
+color21 #{{ index $palette "21" }}
 
 # White (Platinum)
 color7  #e5e5e5

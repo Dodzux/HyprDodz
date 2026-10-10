@@ -109,7 +109,7 @@ Alternatively, edit it directly in your editor and then run `chezmoi add`.
 
 `chezmoi init` detects AMD, Intel, or NVIDIA hardware and saves the vendor in its machine-local configuration. Bootstrap selects the matching `80-gpu-*.txt` manifest. Re-run `chezmoi init` after changing GPUs.
 
-Potat0Mac explicitly configures its native 1920x1200/165 Hz panel and leaves GPU selection automatic for its working AMD/NVIDIA hybrid setup. Host profiles can also specify GPU addresses and environment variables when needed. The default profile leaves GPU selection automatic. Home paths are filled in by templates, while optional apps such as Codex are configured separately. The Codex launcher starts in `~/Projects` by default.
+Potat0Mac explicitly configures its native 1920x1200/165 Hz panel and leaves GPU selection automatic for its working AMD/NVIDIA hybrid setup. Host profiles can also specify GPU addresses and environment variables when needed. The default profile leaves GPU selection automatic. Home paths are filled in by templates, while optional apps such as Codex are configured separately. The Codex launcher opens a new window in `~/Codex` by default.
 
 Hardware RGB helpers need access to the corresponding HID devices. The file `openrgb_color.sh.before-g614ph` is retained because the active script uses it as the generic OpenRGB fallback.
 

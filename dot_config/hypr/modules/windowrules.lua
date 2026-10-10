@@ -27,6 +27,13 @@ hl.window_rule({
 })
 
 -- ▓▒░ LAYER RULES — UI Elements, Notifications, Panels
+-- Slurp's selector must disappear before grim captures the selected region.
+hl.layer_rule({
+    name  = "screenshot-selection-no-animation",
+    match = { namespace = "^selection$" },
+    no_anim = true,
+})
+
 -- Blur all quickshell bar, launcher, screenshot, clipboard, and OSD layers
 hl.layer_rule({
     name  = "blur-quickshell-bar",

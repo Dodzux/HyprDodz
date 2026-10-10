@@ -99,17 +99,14 @@ bind(m .. " + SHIFT + V", hl.dsp.exec_cmd("cliphist wipe"), { description = "Pan
 
 -- ▓▒░ SCREENSHOT BINDINGS
 -- F11: Direct region capture → clipboard (fast, no UI)
--- The grim/wl-copy pair MUST stay braced. `||` and `&&` are equal precedence and
--- left-associative, so the unbraced form parsed as (pkill || grim) && wl-copy:
--- pressing F11 to cancel an open slurp killed the selection and then copied the
--- *previous* capture off the temp file. F12 never had this because `|` binds
--- tighter than `||`, which is why only this line needed the braces.
+-- Both paths stop on selection cancellation or capture failure and use a fresh
+-- temporary image, so canceling never copies or annotates an old screenshot.
 bind("F11", hl.dsp.exec_cmd(
-    'sh -c \'TEMP="/tmp/screenshot_region.png"; pkill -x slurp || { grim -g "$(slurp)" "$TEMP" && wl-copy -t image/png < "$TEMP"; }\''
+    'sh "$HOME/.config/hypr/scripts/screenshot_region.sh" copy'
 ), { description = "Capture: Region to clipboard" })
 -- F12: Region capture → Satty annotation → save & clipboard
 bind("F12", hl.dsp.exec_cmd(
-    'sh -c \'mkdir -p ~/Pictures/Screenshots; pkill -x slurp || grim -g "$(slurp)" - || satty --filename - --output-filename ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png\''
+    'sh "$HOME/.config/hypr/scripts/screenshot_region.sh" annotate'
 ), { description = "Capture: Region to Satty (annotate + save)" })
 -- SUPER+Print: close all windows first -- captures the desktop as the README
 -- preview and pushes it (chezmoi scripts/showcase.sh)
@@ -152,8 +149,8 @@ bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AU
 bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true, description = "Media: Volume down" })
 bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, description = "Media: Mute output" })
 bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, description = "Media: Mute microphone" })
-bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true, description = "Media: Brightness up" })
-bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true, description = "Media: Brightness down" })
+bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%+ && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness up" })
+bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%- && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness down" })
 
 -- ▓▒░ MEDIA CONTROL
 bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true, description = "Media: Next track" })
