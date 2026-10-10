@@ -33,6 +33,12 @@ Singleton {
     readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.08)    // Ultra-thin luminous border
     readonly property color activeGlow: Qt.rgba(1, 1, 1, 0.15)    // Active highlight backdrop glow
 
+    // Shared motion and accent tint for the three selection panels.
+    readonly property int launcherSelectionDuration: 150
+    readonly property color launcherSelectionBg: Qt.rgba(accent.r, accent.g, accent.b, 0.14)
+    readonly property color launcherSelectionBorder: Qt.rgba(accent.r, accent.g, accent.b, 0.35)
+    readonly property color launcherHoverBg: Qt.rgba(accent.r, accent.g, accent.b, 0.08)
+
     // Caskaydia Cove Typographic Stack
     readonly property string fontMain: "CaskaydiaCove Nerd Font, CaskaydiaCove NF, Cascadia Code, monospace"
 

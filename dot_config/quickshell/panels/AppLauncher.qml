@@ -195,7 +195,18 @@ PanelWindow {
             model: launcherWindow.filteredApps
             currentIndex: 0
             clip: true
-            highlightMoveDuration: 80
+            highlightMoveDuration: Theme.launcherSelectionDuration
+            highlightMoveVelocity: -1
+            highlight: Rectangle {
+                width: appList.width - 12
+                radius: 10
+                antialiasing: true
+                color: Theme.launcherSelectionBg
+                border.color: Theme.launcherSelectionBorder
+                border.width: 1
+                Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+            }
 
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
@@ -222,13 +233,12 @@ PanelWindow {
                 required property int index
                 readonly property bool highlighted: appList.currentIndex === index || rowHover.hovered
 
-                color: appList.currentIndex === index
-                    ? Theme.bgSelection
-                    : rowHover.hovered ? Theme.hoverBg : "transparent"
-                border.color: appList.currentIndex === index ? Theme.glassBorder : "transparent"
+                color: rowHover.hovered && appList.currentIndex !== index
+                    ? Theme.launcherHoverBg : "transparent"
+                border.color: "transparent"
                 border.width: 1
-                Behavior on color { ColorAnimation { duration: 80 } }
-                Behavior on border.color { ColorAnimation { duration: 80 } }
+                Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
 
                 RowLayout {
                     anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
@@ -251,6 +261,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             text: "󰣆"
                             color: appRow.highlighted ? Theme.accent : Theme.subtext0
+                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                             font.family: Theme.fontMain
                             font.pixelSize: 20
                             visible: parent.status !== Image.Ready
@@ -265,7 +276,7 @@ PanelWindow {
                         Text {
                             text: appRow.modelData.name
                             color: appRow.highlighted ? Theme.accent : Theme.text
-                            Behavior on color { ColorAnimation { duration: 80 } }
+                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                             font.family: Theme.fontMain
                             font.pixelSize: 13
                             font.weight: Font.Medium
@@ -277,7 +288,7 @@ PanelWindow {
                         Text {
                             text: appRow.modelData.comment || appRow.modelData.genericName || ""
                             color: appRow.highlighted ? Theme.accent : Theme.subtext0
-                            Behavior on color { ColorAnimation { duration: 80 } }
+                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                             font.family: Theme.fontMain
                             font.pixelSize: 11
                             Layout.fillWidth: true
@@ -291,6 +302,7 @@ PanelWindow {
                     Text {
                         text: ""
                         color: appRow.highlighted ? Theme.accent : Theme.subtext0
+                        Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                         font.family: Theme.fontMain
                         font.pixelSize: 12
                         visible: appRow.modelData.runInTerminal

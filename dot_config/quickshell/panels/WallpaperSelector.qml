@@ -144,6 +144,21 @@ PanelWindow {
             model: wallpaperWindow.filteredWallpapers
             currentIndex: 0
             clip: true
+            highlightMoveDuration: Theme.launcherSelectionDuration
+            highlight: Item {
+                width: gridList.cellWidth
+                height: gridList.cellHeight
+                Rectangle {
+                    anchors { fill: parent; margins: 6 }
+                    radius: 10
+                    antialiasing: true
+                    color: Theme.launcherSelectionBg
+                    border.color: Theme.launcherSelectionBorder
+                    border.width: 1
+                    Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                }
+            }
             
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
@@ -159,18 +174,21 @@ PanelWindow {
             }
 
             delegate: Item {
+                id: wallpaperTile
                 width: gridList.cellWidth
                 height: gridList.cellHeight
                 
                 required property var modelData
                 required property int index
+                readonly property bool highlighted: gridList.currentIndex === index || itemHover.hovered
 
                 Rectangle {
                     anchors { fill: parent; margins: 6 }
                     radius: 10
-                    color: gridList.currentIndex === index ? Theme.bgSelection : (itemHover.hovered ? Theme.hoverBg : "transparent")
-                    border.color: gridList.currentIndex === index ? Theme.glassBorder : "transparent"
+                    color: itemHover.hovered && gridList.currentIndex !== index ? Theme.launcherHoverBg : "transparent"
+                    border.color: "transparent"
                     border.width: 1
+                    Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                     
                     ColumnLayout {
                         anchors.fill: parent
@@ -196,7 +214,8 @@ PanelWindow {
                         
                         Text {
                             text: modelData.name
-                            color: Theme.text
+                            color: wallpaperTile.highlighted ? Theme.accent : Theme.text
+                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                             font.family: Theme.fontMain
                             font.pixelSize: 12
                             Layout.fillWidth: true
