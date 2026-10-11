@@ -268,7 +268,7 @@ def main():
         'Selected browser preferences match the live settings. The dconf text snapshot',
         'exists; this audit does not compare its content with the running dconf database.',
     ]
-    lines += ['', '## Run again', '', '```sh', 'python3 scripts/audit-configs.py --report CONFIG-COVERAGE.md', '```', '',
+    lines += ['', '## Run again', '', '```sh', 'python3 scripts/audit-configs.py --report docs/reports/config-coverage.md', '```', '',
               'A new file that is neither tracked nor explicitly excluded makes the audit fail.',
               'The audit does not scan all personal documents, installed programs, or system',
               'files under `/etc` and `/usr`; those are outside these home-config roots.', '']

@@ -1,0 +1,10 @@
+# Bundled upstream assets should not dominate GitHub's language summary.
+dot_local/share/icons/** linguist-vendored=true
+dot_local/share/themes/** linguist-vendored=true
+dot_themes/** linguist-vendored=true
+dot_config/micro/syntax/** linguist-vendored=true
+system/usr/share/sddm/themes/** linguist-vendored=true
+Pictures/Wallpapers/** linguist-vendored=true
+assets/screenshots/** linguist-vendored=true
+# Diagnostic output is generated; guides remain ordinary documentation.
+docs/reports/config-coverage.md linguist-generated=true

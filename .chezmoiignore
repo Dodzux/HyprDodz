@@ -2,9 +2,11 @@
 **/.git
 **/.git/**
 .gitignore
+.gitattributes
 
 # Documentation & repository assets
 README.md
+docs/**
 assets/**
 scripts/**
 packages/**
@@ -43,7 +45,6 @@ system/**
 **/.vscode/**
 
 # Repository reports and empty-directory markers
-CONFIG-COVERAGE.md
 **/.keep
 
 # Oversized wallpapers kept local

@@ -1,13 +1,13 @@
 # Configuration coverage
 
-Checked: 2026-10-10 14:48 UTC.
+Checked: 2026-10-11 18:10 UTC.
 
 This compares live configuration files and symlinks with chezmoi’s rendered state,
 and also searches for files that chezmoi does not manage. Source filenames such as
 `dot_config`, `private_`, `executable_`, and `.tmpl` encode deployment behavior;
 they are not expected to look identical to the live folder names.
 
-**51245 tracked entries checked; 3 content/link differences;
+**51246 tracked entries checked; 0 content/link differences;
 1291 unexplained missing entries.**
 
 0 malformed live symlink target(s) are normalized by chezmoi; see below.
@@ -17,7 +17,7 @@ they are not expected to look identical to the live folder names.
 | `.bash_logout` | 1 | 0 | 0 | 0 | 0 |
 | `.bash_profile` | 1 | 0 | 0 | 0 | 0 |
 | `.bashrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/BraveSoftware` | 0 | 0 | 0 | 4259 | 0 |
+| `.config/BraveSoftware` | 0 | 0 | 0 | 4337 | 0 |
 | `.config/Codex` | 0 | 0 | 0 | 53 | 1287 |
 | `.config/Kvantum` | 6 | 0 | 0 | 0 | 0 |
 | `.config/OpenRGB` | 3 | 0 | 0 | 11 | 0 |
@@ -27,14 +27,14 @@ they are not expected to look identical to the live folder names.
 | `.config/arkrc` | 1 | 0 | 0 | 0 | 0 |
 | `.config/autostart` | 1 | 0 | 0 | 0 | 0 |
 | `.config/baloofileinformationrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/btop` | 4 | 1 | 0 | 0 | 0 |
+| `.config/btop` | 4 | 0 | 0 | 0 | 0 |
 | `.config/cachyos` | 1 | 0 | 0 | 1 | 0 |
 | `.config/cachyos-hello.json` | 1 | 0 | 0 | 0 | 0 |
 | `.config/chezmoi` | 0 | 0 | 0 | 2 | 0 |
 | `.config/dconf` | 0 | 0 | 1 | 0 | 0 |
 | `.config/discord` | 1 | 0 | 0 | 7459 | 0 |
 | `.config/dolphinrc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/fish` | 12 | 0 | 0 | 1 | 0 |
+| `.config/fish` | 13 | 0 | 0 | 1 | 0 |
 | `.config/gh` | 1 | 0 | 0 | 1 | 0 |
 | `.config/ghostty` | 3 | 0 | 0 | 0 | 0 |
 | `.config/gtk-3.0` | 3 | 0 | 0 | 0 | 0 |
@@ -43,7 +43,7 @@ they are not expected to look identical to the live folder names.
 | `.config/inkscape` | 12 | 0 | 0 | 1 | 0 |
 | `.config/kdeglobals` | 1 | 0 | 0 | 0 | 0 |
 | `.config/kiorc` | 1 | 0 | 0 | 0 | 0 |
-| `.config/kitty` | 5 | 1 | 0 | 1 | 0 |
+| `.config/kitty` | 5 | 0 | 0 | 1 | 0 |
 | `.config/micro` | 153 | 0 | 0 | 0 | 0 |
 | `.config/mimeapps.list` | 1 | 0 | 0 | 0 | 0 |
 | `.config/mozilla` | 0 | 0 | 0 | 188 | 0 |
@@ -78,7 +78,7 @@ they are not expected to look identical to the live folder names.
 | `.local/share/icons` | 46420 | 0 | 0 | 615 | 0 |
 | `.local/share/nwg-look` | 1 | 0 | 0 | 0 | 0 |
 | `.local/share/themes` | 3786 | 0 | 0 | 0 | 0 |
-| `.nvidia-settings-rc` | 1 | 1 | 0 | 0 | 0 |
+| `.nvidia-settings-rc` | 1 | 0 | 0 | 0 | 0 |
 | `.themes` | 631 | 0 | 0 | 0 | 0 |
 | `.zshrc` | 1 | 0 | 0 | 0 | 0 |
 | `Pictures/Wallpapers` | 28 | 0 | 0 | 1 | 0 |
@@ -93,7 +93,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 
 | Location | Entries | Reason |
 | --- | ---: | --- |
-| `.config/BraveSoftware` | 4259 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
+| `.config/BraveSoftware` | 4337 | Browser profile, accounts, history, caches; selected ordinary preferences exported separately |
 | `.config/Codex` | 52 | Application log |
 | `.config/Codex` | 1 | Backup file |
 | `.config/Codex` | 1287 | Not managed and no exclusion applies |
@@ -129,9 +129,7 @@ in `system/user/dconf.ini.tmpl` rather than copying its binary database.
 
 ## Differences
 
-- `.config/btop/themes/wallpaper.theme`
-- `.config/kitty/kitty.conf`
-- `.nvidia-settings-rc`
+None.
 
 ## Unexplained missing entries
 
@@ -1467,7 +1465,7 @@ python3 scripts/restore-config-permissions.py
 ## Run again
 
 ```sh
-python3 scripts/audit-configs.py --report CONFIG-COVERAGE.md
+python3 scripts/audit-configs.py --report docs/reports/config-coverage.md
 ```
 
 A new file that is neither tracked nor explicitly excluded makes the audit fail.
