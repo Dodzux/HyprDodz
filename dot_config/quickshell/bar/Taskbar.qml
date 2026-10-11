@@ -56,9 +56,9 @@ Row {
 
     function lookupTerminalProgram(title) {
         const t = title ? title.toLowerCase() : "";
-        // Codex uses its name with an optional activity symbol while running.
+        // Codex titles retain the app name before project or session details.
         // Do not match paths or the last command shown in an idle prompt.
-        if (/^(?:[^a-z0-9\s/\\]\s+)?codex$/u.test(t)) {
+        if (/^(?:[^a-z0-9\s/\\]\s+)?codex(?:$|\s+(?:\||[\u2800-\u28ff])\s+)/u.test(t)) {
             return Quickshell.env("HOME") + "/.local/share/icons/hicolor/scalable/apps/codex-logo.svg";
         }
         for (let i = 0; i < terminalPrograms.length; i++) {
