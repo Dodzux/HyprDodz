@@ -12,8 +12,9 @@ def browser_preferences(home):
         selected = {key: original[key] for key in (
             'accessibility', 'bookmark_bar', 'intl', 'spellcheck', 'vertical_tabs', 'webkit',
         ) if key in original}
+        # Window geometry changes during ordinary use and is runtime state.
         browser = {key: value for key, value in original.get('browser', {}).items() if key in (
-            'custom_chrome_frame', 'theme', 'window_placement', 'window_placement_popup',
+            'custom_chrome_frame', 'theme',
         )}
         if browser:
             selected['browser'] = browser

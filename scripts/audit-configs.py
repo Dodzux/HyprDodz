@@ -27,6 +27,7 @@ ROOTS = (
 
 # Tracked files take precedence over these rules. No raw profile is copied to Git.
 EXCLUSIONS = (
+    ('.config/Codex/*', 'Codex desktop profile, accounts, sessions, caches, and downloaded components'),
     ('.config/BraveSoftware/*', 'Browser profile, accounts, history, caches; selected ordinary preferences exported separately'),
     ('.config/mozilla/*', 'Firefox profile, accounts, history, caches; selected ordinary preferences exported separately'),
     ('.config/discord/*', 'Discord account/session data, caches, installed application files'),
@@ -46,6 +47,7 @@ EXCLUSIONS = (
     ('.config/quickshell/quickshell-documentation/*', 'Downloaded documentation'),
     ('.config/yazi/yazi-documentation/*', 'Downloaded documentation'),
     ('.config/quickshell/.qmlls.ini', 'Generated language-server configuration'),
+    ('.config/opencode/themes/opencode-wallpaper.json', 'Generated wallpaper theme; source template is tracked under hypr/scripts'),
     ('.local/bin/codex', 'Installed Codex executable; launcher configuration is tracked'),
     ('.local/share/applications/mimeinfo.cache', 'Generated desktop-entry cache'),
     ('.local/share/icons/Bibata-Accent-*/*', 'Generated wallpaper cursor variant; base theme is tracked'),
@@ -231,9 +233,9 @@ def main():
         '`dot_config`, `private_`, `executable_`, and `.tmpl` encode deployment behavior;',
         'they are not expected to look identical to the live folder names.', '',
         f'**{totals["tracked"]} tracked entries checked; {len(changed)} content/link differences;',
-        f'{len(missing)} unexplained missing entries.**', '',
+        f'{len(missing)} unexplained unmanaged entries.**', '',
         f'{len(normalized)} malformed live symlink target(s) are normalized by chezmoi; see below.', '',
-        '| Live folder/file | Tracked | Different | Captured separately | Excluded | Missing |',
+        '| Live folder/file | Tracked | Different | Captured separately | Excluded | Unmanaged |',
         '| --- | ---: | ---: | ---: | ---: | ---: |',
     ]
     for group, counts in sorted(rows.items()):
@@ -249,7 +251,7 @@ def main():
         lines.append(f'| `{group}` | {len(entries)} | {reason} |')
     lines += ['', '## Differences', '']
     lines += [f'- `{path}`' for path in changed] or ['None.']
-    lines += ['', '## Unexplained missing entries', '']
+    lines += ['', '## Unexplained unmanaged entries', '']
     lines += [f'- `{path}`' for path in missing] or ['None.']
     lines += ['', '## Normalized symlink targets', '']
     lines += [f'- `{path}`: live target contains surrounding whitespace and is broken; chezmoi strips that whitespace.' for path in normalized] or ['None.']
@@ -275,7 +277,7 @@ def main():
     report = '\n'.join(lines)
     if args.report:
         args.report.write_text(report)
-        print(f'Wrote {args.report}: {totals["tracked"]} tracked, {len(changed)} different, {len(missing)} missing, {len(captures)} snapshot issues')
+        print(f'Wrote {args.report}: {totals["tracked"]} tracked, {len(changed)} different, {len(missing)} unmanaged, {len(captures)} snapshot issues')
     else:
         print(report)
     return 1 if missing or changed or captures else 0

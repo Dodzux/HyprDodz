@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export YDOTOOL_SOCKET="${XDG_RUNTIME_DIR:?Run this from your desktop session}/opencode-ydotool.sock"
+if ! command -v ydotool >/dev/null; then
+    printf '%s\n' 'ydotool is not installed. Run desktop-control-start first.' >&2
+    exit 1
+fi
+if [[ ! -S "$YDOTOOL_SOCKET" ]]; then
+    printf '%s\n' 'Desktop input control is not running. Run desktop-control-start first.' >&2
+    exit 1
+fi
+
+exec /usr/bin/ydotool "$@"

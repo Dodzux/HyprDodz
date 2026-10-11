@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v ydotool >/dev/null || ! command -v ydotoold >/dev/null; then
+    printf '%s\n' 'Installing ydotool. Enter your sudo password here if prompted.'
+    sudo pacman -S --needed ydotool
+fi
+
+runtime_dir="${XDG_RUNTIME_DIR:?Run this from your desktop session}"
+socket_path="$runtime_dir/opencode-ydotool.sock"
+
+printf '\n%s\n' \
+    'Starting session-only desktop input control.' \
+    'Only your user account can access the control socket.' \
+    'Leave this terminal open. Press Ctrl+C here to stop input control.' \
+    'No automatic startup or permanent input-device permissions are added.'
+
+exec sudo /usr/bin/ydotoold \
+    --socket-path="$socket_path" \
+    --socket-own="$(id -u):$(id -g)" \
+    --socket-perm=0600

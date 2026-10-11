@@ -14,6 +14,8 @@ system/**
 
 # App-managed state (fish rewrites this constantly; never track it)
 .config/fish/fish_variables
+.config/Codex/**
+.config/opencode/themes/opencode-wallpaper.json
 
 # Generated / machine-local files that live inside tracked config dirs
 .config/quickshell/.qmlls.ini
