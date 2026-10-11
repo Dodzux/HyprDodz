@@ -150,27 +150,30 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 
 | Shortcut | Action |
 | --- | --- |
-| `SUPER + T` | Kitty terminal |
-| `SUPER + E` | Yazi file manager |
-| `SUPER + B` | Brave browser |
-| `SUPER + C` | Neovim |
-| `SUPER + X` | Codex, when its launcher is available |
-| `SUPER + O` | Obsidian |
-| `SUPER + U` | System updater (`pacman -Syu` in Kitty) |
-| `SUPER + A` | App launcher |
-| `SUPER + F` | Focus the bar |
-| `SUPER + Space` | Wallpaper selector |
-| `SUPER + V` | Clipboard history |
-| `SUPER + Backspace` | Power menu |
-| `SUPER + S` / `SUPER + N` | Scratchpad terminal / notes |
-| `SUPER + K` | Switch US / Arabic keyboard layout |
-| `SUPER + Shift + W` | Random wallpaper and accent sync |
-| `SUPER + Shift + P` | Screen color picker |
-| `SUPER + L` | Lock screen |
-| `Print` | Quickshell screenshot panel |
-| `F11` | Screen region to clipboard |
-| `F12` | Screen region to Satty for annotation |
-| `SUPER + Print` | Capture and publish the README preview |
+| `SUPER + T` | Open Kitty |
+| `SUPER + E` | Open Yazi in Kitty |
+| `SUPER + B` | Open Brave |
+| `SUPER + C` | Open Neovim in Kitty |
+| `SUPER + X` | Open Codex in Kitty, if installed |
+| `SUPER + O` | Open Obsidian |
+| `SUPER + U` | Run `sudo pacman -Syu` in Kitty to update the system |
+| `SUPER + A` | Show/hide the app launcher |
+| `SUPER + F` | Toggle keyboard focus on the bar |
+| `SUPER + Space` | Show/hide the wallpaper selector |
+| `SUPER + V` | Show/hide clipboard history |
+| `SUPER + H` | Show/hide the interactive shortcut list |
+| `SUPER + Backspace` | Show/hide the menu for lock, suspend, logout, restart and shutdown |
+| `SUPER + S` | Show/hide the terminal scratchpad workspace |
+| `SUPER + N` | Show/hide the notes scratchpad workspace |
+| `SUPER + K` | Cycle keyboard layouts (US / Arabic by default) |
+| `SUPER + Shift + W` | Choose another random wallpaper and sync its accent |
+| `SUPER + Shift + P` | Pick a screen color and apply it to RGB lighting |
+| `SUPER + I` | Pick a screen color and copy it to the clipboard |
+| `SUPER + L` | Lock the current session |
+| `Print` | Show/hide the screenshot menu: copy, save, or both |
+| `F11` | Select a screen region and copy its image to the clipboard |
+| `F12` | Select a screen region and open it in Satty for annotation |
+| `SUPER + Print` | Capture the focused monitor and push the README preview; close all windows first |
 
 Edit shortcuts in [modules/keybindings.lua](dot_config/hypr/modules/keybindings.lua) and app commands in [modules/variables.lua](dot_config/hypr/modules/variables.lua).
 
