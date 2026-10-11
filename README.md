@@ -163,8 +163,8 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | `SUPER + V` | Show/hide clipboard history |
 | `SUPER + H` | Show/hide the interactive shortcut list |
 | `SUPER + Backspace` | Show/hide the menu for lock, suspend, logout, restart and shutdown |
-| `SUPER + S` | Show/hide the terminal scratchpad workspace |
-| `SUPER + N` | Show/hide the notes scratchpad workspace |
+| `SUPER + S` | Show/hide the `terminal` special workspace |
+| `SUPER + N` | Show/hide the `notes` special workspace |
 | `SUPER + K` | Cycle keyboard layouts (US / Arabic by default) |
 | `SUPER + Shift + W` | Choose another random wallpaper and sync its accent |
 | `SUPER + Shift + P` | Pick a screen color and apply it to RGB lighting |
