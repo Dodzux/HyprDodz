@@ -56,6 +56,11 @@ Row {
 
     function lookupTerminalProgram(title) {
         const t = title ? title.toLowerCase() : "";
+        // Codex uses its name with an optional activity symbol while running.
+        // Do not match paths or the last command shown in an idle prompt.
+        if (/^(?:[^a-z0-9\s/\\]\s+)?codex$/u.test(t)) {
+            return Quickshell.env("HOME") + "/.local/share/icons/hicolor/scalable/apps/codex-logo.svg";
+        }
         for (let i = 0; i < terminalPrograms.length; i++) {
             if (new RegExp("\\b" + terminalPrograms[i].key + "\\b").test(t)) {
                 return terminalPrograms[i].icon;
