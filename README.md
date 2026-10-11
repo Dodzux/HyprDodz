@@ -193,40 +193,34 @@ Bootstrap installs the greeter. Browser and dconf snapshots are restored manuall
 
 ---
 
-## Dotfiles Management
+## Dotfiles Management Cheatsheet
 
 ```bash
-# Compare live files with the saved configs
+# Check modified files against repo
 chezmoi status
 chezmoi diff
 
-# Edit a saved config, preserving its template expressions
-chezmoi edit ~/.config/kitty/kitty.conf
+# Edit a managed file
+chezmoi edit ~/.config/hypr/hyprland.lua
 
-# Save changes from existing live files (skips templates)
-chezmoi re-add
-
-# Track a new file
+# Add a newly created configuration file
 chezmoi add ~/.config/newapp/config
 
-# Refresh machine data and GPU detection
+# Pull edits made in ~/.config back into the repo (skips templates — see above)
+chezmoi re-add
+
+# Change per-machine data (display name; GPU is re-detected)
 chezmoi init
 
-# Review before applying the saved configs
-chezmoi apply --interactive
+# Re-apply repository state to the system
+chezmoi apply
 
-# Review, commit and push repository changes
-cd ~/.local/share/chezmoi
-git diff --check
-git diff
-# Example: stage the shortcut file after reviewing its changes
-git add dot_config/hypr/modules/keybindings.lua
-git diff --cached --stat
-git commit -m "Update desktop configs"
+# Commit and push changes to GitHub
+chezmoi cd
+git add .
+git commit -m "Update configurations"
 git push
 ```
-
-Save newer live edits before applying the whole repository. `dot_`, `private_`, `executable_`, `symlink_` and `.tmpl` are chezmoi attributes: they describe names, permissions, links and rendering rather than arbitrary folder labels.
 
 ### Repository layout
 
