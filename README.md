@@ -6,7 +6,7 @@
 
 ---
 
-This repo contains my desktop and personal app settings for **CachyOS**. Start with an existing Arch-family installation; the package lists, configs and greeter setup build on that system. The boot configuration under `system/boot/` is reference material.
+Desktop and personal app settings for **CachyOS**, intended for an existing Arch-family installation.
 
 ## Quick Start & Reproduction
 
@@ -28,13 +28,13 @@ Initialization asks for the name shown on the lock screen and greeter, and detec
 
 Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave** is installed separately (`brave-bin` on my machine); optional personal apps such as Codex also need their own installation.
 
-The full [scripts/bootstrap.sh](scripts/bootstrap.sh) can install the package lists and detected GPU stack, upgrade the system, set Fish as the login shell, install the SDDM greeter, enable services and force-apply the saved configs. Review those operations before choosing to run it:
+For full setup, review [scripts/bootstrap.sh](scripts/bootstrap.sh). It upgrades the system, installs packages and GPU drivers, configures Fish, SDDM and services, and force-applies the configs:
 
 ```bash
 ~/.local/share/chezmoi/scripts/bootstrap.sh
 ```
 
-For manual setup, the separate `~/.config/hypr/scripts/bootstrap.sh` links and enables the desktop's user services after their packages are installed. The [detailed restore notes](docs/reports/restore-on-new-install.md) cover service setup and RGB device permissions.
+For manual setup, `~/.config/hypr/scripts/bootstrap.sh` configures desktop user services after package installation. See the [restore notes](docs/reports/restore-on-new-install.md) for details.
 
 ---
 
@@ -58,9 +58,9 @@ For manual setup, the separate `~/.config/hypr/scripts/bootstrap.sh` links and e
 
 ### Wallpaper accents
 
-`hypr/scripts/sync_border.py` runs at login, on config reload and after wallpaper changes. It selects an accent from the image and updates Hyprland, the lock screen, Quickshell, GTK/Qt, Kitty, Starship, Yazi and supported RGB devices. `sync_cursor.py` generates a separate colored Bibata cursor theme.
+`hypr/scripts/sync_border.py` keeps desktop, app and RGB accents matched to the wallpaper. `sync_cursor.py` creates a colored Bibata cursor variant.
 
-Shared templates read the saved color from `~/.local/state/hypr/accent`, so applying the repo keeps the current wallpaper colors. A fresh machine starts with `#e5e5e5` and the base Bibata cursor. Select a wallpaper with `SUPER + Space` to generate the color state.
+Templates read `~/.local/state/hypr/accent`, preserving the selected color when applying configs. A fresh machine defaults to `#e5e5e5`; choose a wallpaper with `SUPER + Space`.
 
 ```bash
 # Preview a wallpaper's accent without applying it
@@ -89,7 +89,7 @@ Accent-bearing configs are templates: `chezmoi re-add` skips them. Edit their so
 
 ### Host profiles
 
-[hosts/init.lua](dot_config/hypr/hosts/init.lua) loads the profile matching the machine's hostname. The username is separate from the hostname. Unrecognized machines use `default.lua`.
+[hosts/init.lua](dot_config/hypr/hosts/init.lua) selects a profile by hostname, falling back to `default.lua`.
 
 ```text
 ~/.config/hypr/hosts/
@@ -109,17 +109,17 @@ chezmoi add ~/.config/hypr/hosts/"$profile".lua
 
 ### GPU selection
 
-My profile leaves `gpu` and `env` empty because automatic selection works on this AMD/NVIDIA hybrid laptop. Other profiles can specify GPU PCI addresses and environment overrides; [modules/environment.lua](dot_config/hypr/modules/environment.lua) resolves the addresses to DRM devices at startup.
+My AMD/NVIDIA laptop uses automatic GPU selection. Other profiles can set GPU addresses and environment overrides through [modules/environment.lua](dot_config/hypr/modules/environment.lua).
 
-Package selection is separate: `chezmoi init` detects NVIDIA, AMD or Intel and saves that choice locally. Bootstrap installs the matching `80-gpu-*.txt` list. NVIDIA takes precedence on my hybrid machine; this is not a complete driver prescription for every hybrid system. Review the lists against your OS and re-run initialization after changing hardware.
+`chezmoi init` detects the GPU vendor; bootstrap selects the matching package list, prioritizing NVIDIA on my hybrid system. Review drivers for your hardware and re-run initialization after changing GPUs.
 
 ### Keyboard & mouse lighting
 
-On the G614PH, native helpers update the ASUS keyboard and G305 indicator independently. Updates use bounded retries and wallpaper-generation checks. Mouse startup retries handle delayed wireless wake-up; an existing OpenRGB process causes mouse updates to be deferred.
+Native helpers sync the G614PH keyboard and G305 indicator to the wallpaper. Other board models use the OpenRGB fallback.
 
-The OpenRGB package supplies device access rules. Reconnect the devices or reboot after installation, and run the helpers as your normal user. The desktop service helper excludes the OpenRGB server. Other board models use `openrgb_color.sh.before-g614ph`, which is an active fallback despite its backup-like name.
+OpenRGB supplies device access rules; run the helpers as your normal user. The native path excludes the OpenRGB server. Keep `openrgb_color.sh.before-g614ph`: it is the active fallback for other hardware.
 
-The [native RGB review](docs/reports/native-mouse-upload-review.md) records the supported hardware and verification limits. Run the hardware-free routing checks with `python3 scripts/test-mouse-rgb.py`.
+See the [RGB review](docs/reports/native-mouse-upload-review.md) for device requirements and checks.
 
 ---
 
@@ -172,28 +172,21 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | `F12` | Screen region to Satty for annotation |
 | `SUPER + Print` | Capture and publish the README preview |
 
-Change shortcuts in [modules/keybindings.lua](dot_config/hypr/modules/keybindings.lua) and app commands in [modules/variables.lua](dot_config/hypr/modules/variables.lua). The optional Codex launcher opens in `~/Codex` by default and resumes the last session when launched without arguments.
+Edit shortcuts in [modules/keybindings.lua](dot_config/hypr/modules/keybindings.lua) and app commands in [modules/variables.lua](dot_config/hypr/modules/variables.lua).
 
 ---
 
 ## System Files
 
-[system/](system/) is excluded from chezmoi's home deployment. It holds the greeter files and supplemental references:
+[system/](system/) is excluded from home deployment.
 
-```text
-system/
-├── etc/sddm.conf
-├── usr/share/sddm/themes/hypr-sddm/
-├── boot/limine.conf.header
-└── user/
-    ├── browser-preferences.json
-    ├── dconf.ini.tmpl
-    └── directory-permissions.json
-```
+| Path | Purpose |
+| --- | --- |
+| `etc/sddm.conf` | SDDM configuration |
+| `usr/share/sddm/themes/hypr-sddm/` | Custom greeter theme |
+| `user/` | Browser preferences, dconf and directory-mode snapshots |
 
-Bootstrap installs the SDDM config/theme and copies `street.gif` and `black_bg.jpg` from the wallpaper folder into the greeter. The display name is written to `theme.conf.user`. The Limine header is retained as a reference; bootstrap does not write it to `/boot`.
-
-`system/user/` contains selected browser preferences, a dconf text snapshot and custom directory modes. Browser preferences require manual restoration; restore dconf explicitly with `chezmoi execute-template < system/user/dconf.ini.tmpl | dconf load /`. The directory-mode hook runs after a normal apply; preview it with `python3 scripts/restore-config-permissions.py --dry-run`.
+Bootstrap installs the greeter. Browser and dconf snapshots are restored manually; directory modes use the apply hook. See the [restore notes](docs/reports/restore-on-new-install.md).
 
 ---
 
@@ -261,7 +254,7 @@ python3 scripts/audit-configs.py --report docs/reports/config-coverage.md
 
 ## Updating the Showcase Screenshot
 
-Close every window, then press `SUPER + Print`. [scripts/showcase.sh](scripts/showcase.sh) captures the focused monitor into `assets/screenshots/preview.png`, commits that image and pushes it to the configured remote. It requires working GitHub authentication and refuses to capture while windows are open.
+Close all windows and press `SUPER + Print`. [scripts/showcase.sh](scripts/showcase.sh) captures the desktop preview, commits it and pushes it using your GitHub authentication.
 
 ---
 

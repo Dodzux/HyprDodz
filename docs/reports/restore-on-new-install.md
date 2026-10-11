@@ -3,7 +3,7 @@
 Chezmoi saves the desktop's user files, wallpapers, themes, scripts, and service
 links. Start with a working Arch/CachyOS installation and the same supported
 hardware to reproduce the native G305 and ASUS keyboard lighting path. The OS,
-bootloader, kernel, drivers, application installations, and account credentials
+kernel, drivers, application installations, and account credentials
 are separate prerequisites.
 
 ## 1. Download and review
