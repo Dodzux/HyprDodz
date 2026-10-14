@@ -43,8 +43,11 @@ edit = [
 play = [
     { run = 'mpv %s', orphan = true, for = "unix" },
 ]
-swayimg = [
-    { run = 'swayimg %s', orphan = true, for = "unix" },
+eog = [
+    { run = 'eog -- %s', orphan = true, desc = "Eye of GNOME", for = "unix" },
+]
+evince = [
+    { run = 'evince -- %s', orphan = true, desc = "Document Viewer", for = "unix" },
 ]
 open = [
     { run = 'xdg-open %s1', desc = "Open", for = "unix" },
@@ -61,6 +64,9 @@ archive = [
 
 [open]
 prepend_rules = [
+    # Empty or misidentified PDFs still belong in the document viewer.
+    { url = "*.pdf", use = ["evince", "open", "edit"] },
+
     # VirtualBox
     { url = "*.ova", use = ["virtualbox", "open"] },
     { url = "*.ovf", use = ["virtualbox", "open"] },
@@ -75,10 +81,10 @@ prepend_rules = [
     # Media
     { mime = "video/*",                      use = ["play", "open"] },
     { mime = "audio/*",                      use = ["play", "open"] },
-    { mime = "image/*",                      use = ["swayimg", "open"] },
+    { mime = "image/*",                      use = ["eog", "open"] },
 
     # Documents
-    { mime = "application/pdf",              use = ["open", "edit"] },
+    { mime = "application/pdf",              use = ["evince", "open", "edit"] },
 
     # Archives — browse with Ark first, extract second, open as fallback
     { mime = "application/{zip,x-tar,gzip,x-gzip,x-bzip2,x-xz,x-7z-compressed,x-rar,zstd,x-compressed-tar,x-lzma,x-cpio}", use = ["archive", "extract", "open"] },

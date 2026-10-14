@@ -92,6 +92,8 @@ PanelWindow {
             return app.name.toLowerCase().includes(q)
                 || (app.genericName && app.genericName.toLowerCase().includes(q))
                 || (app.comment && app.comment.toLowerCase().includes(q))
+                || (app.id && app.id.toLowerCase().includes(q))
+                || (app.keywords && app.keywords.join(" ").toLowerCase().includes(q))
         })
     }
 
@@ -140,6 +142,10 @@ PanelWindow {
                     id: searchInput
                     Layout.fillWidth: true
                     color: Theme.text
+                    selectByMouse: true
+                    selectionColor: Theme.accent
+                    selectedTextColor: (0.299 * Theme.accent.r + 0.587 * Theme.accent.g + 0.114 * Theme.accent.b) > 0.5
+                        ? Theme.base : Theme.text
                     font.family: Theme.fontMain
                     font.pixelSize: 14
                     focus: launcherWindow.visible
@@ -193,6 +199,10 @@ PanelWindow {
             }
 
             model: launcherWindow.filteredApps
+            onModelChanged: Qt.callLater(function() {
+                appList.currentIndex = appList.count > 0 ? 0 : -1;
+                appList.positionViewAtBeginning();
+            })
             currentIndex: 0
             clip: true
             highlightMoveDuration: Theme.launcherSelectionDuration
@@ -309,7 +319,12 @@ PanelWindow {
                     }
                 }
 
-                HoverHandler { id: rowHover }
+                HoverHandler {
+                    id: rowHover
+                    onHoveredChanged: {
+                        if (hovered) appList.currentIndex = appRow.index;
+                    }
+                }
 
                 TapHandler {
                     onTapped: {

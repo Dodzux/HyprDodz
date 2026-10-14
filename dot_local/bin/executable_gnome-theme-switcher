@@ -5,6 +5,13 @@ import shutil
 import pathlib
 import logging
 
+# Let Hyprland blur this window instead of GTK requesting an empty blur region.
+_disabled_wayland = os.environ.get("GDK_WAYLAND_DISABLE", "")
+os.environ["GDK_WAYLAND_DISABLE"] = (
+    _disabled_wayland + ("," if _disabled_wayland else "")
+    + "ext_background_effect_manager_v1"
+)
+
 # 定义统一的应用 ID (需与 .desktop 文件名对应，如 org.gnome.GTK4ThemeSwitcher.desktop)
 APP_ID = "org.gnome.GTK4ThemeSwitcher"
 

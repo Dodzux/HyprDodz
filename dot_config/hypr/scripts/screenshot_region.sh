@@ -32,7 +32,9 @@ case "$mode" in
     annotate)
         output_dir="$HOME/Pictures/Screenshots"
         mkdir -p "$output_dir"
-        satty --filename "$image" \
+        # Let Hyprland supply blur instead of GTK's empty blur-region request.
+        GDK_WAYLAND_DISABLE="${GDK_WAYLAND_DISABLE:+$GDK_WAYLAND_DISABLE,}ext_background_effect_manager_v1" \
+            satty --filename "$image" \
             --output-filename "$output_dir/$(date +%Y-%m-%d_%H-%M-%S).png"
         ;;
 esac

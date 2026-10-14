@@ -101,10 +101,15 @@ hl.window_rule({
 })
 
 hl.window_rule({
-    name   = "satty-floating",
-    match  = { class = "^(com.gabm.satty)$" },
-    float  = true,
-    center = true,
+    name    = "satty-floating",
+    match   = { class = "^com\\.gabm\\.satty$" },
+    float   = true,
+    center  = true,
+    -- Match the desktop glass effect, including maximized/fullscreen editing.
+    opacity = "0.80 override 0.70 override 0.80 override",
+    opaque  = false,
+    no_blur = false,
+    xray    = true,
 })
 
 -- ▓▒░ AUTHENTICATION PROMPTS

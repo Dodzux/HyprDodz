@@ -71,11 +71,11 @@ on   = [ "t" ]
 run  = "shell --orphan kitty"
 desc = "Spawn a new terminal in current directory"
 
-# Open in default browser/application
+# Open with Yazi's configured default viewer.
 [[mgr.prepend_keymap]]
 on   = [ "b" ]
-run  = "shell --orphan -- xdg-open %s1"
-desc = "Open selected in default browser/application"
+run  = "open"
+desc = "Open selected with configured default viewer"
 
 # ─── Tabs & Search ─────────────────────────────────────────────────────────────
 

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Keep GTK's empty blur-region request from overriding Hyprland's window blur.
+export GDK_WAYLAND_DISABLE="${GDK_WAYLAND_DISABLE:+$GDK_WAYLAND_DISABLE,}ext_background_effect_manager_v1"
+exec /usr/bin/pavucontrol "$@"
