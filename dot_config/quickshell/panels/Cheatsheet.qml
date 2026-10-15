@@ -44,6 +44,17 @@ PanelWindow {
 
     readonly property string query: searchInput.text.toLowerCase().trim()
 
+    // Reuse installed desktop icons, including Codex's dedicated logo.
+    function iconForApp(row) {
+        if (!row || row.cat !== "Apps") return "";
+        var match = row.title.match(/\(([^)]+)\)$/);
+        var name = (match ? match[1] : row.title).toLowerCase();
+        var aliases = { brave: "brave-browser", neovim: "nvim" };
+        var app = DesktopEntries.byId(aliases[name] || name);
+        if (!app) app = DesktopEntries.applications.values.find(a => a.name.toLowerCase() === name);
+        return app && app.icon ? app.icon : "applications-other";
+    }
+
     // ▓▒░ FILTERING
     // Every query word must appear somewhere in the row (title, keys, group…).
     function matches(row, words) {
@@ -471,6 +482,31 @@ PanelWindow {
                         RowLayout {
                             anchors { fill: parent; leftMargin: 16; rightMargin: 12 }
                             spacing: 12
+
+                            Item {
+                                visible: !entry.isHeader && entry.modelData.cat === "Apps"
+                                Layout.preferredWidth: 28
+                                Layout.preferredHeight: 28
+
+                                Image {
+                                    id: appIcon
+                                    anchors.fill: parent
+                                    readonly property string iconName: sheet.iconForApp(entry.modelData)
+                                    source: !parent.visible ? "" : iconName.startsWith("/")
+                                        ? iconName : "image://icon/" + iconName
+                                    sourceSize: Qt.size(28, 28)
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                }
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: appIcon.status !== Image.Ready
+                                    text: "󰀻"
+                                    font.family: Theme.fontMain
+                                    font.pixelSize: 22
+                                    color: entry.isSelected ? Theme.accent : Theme.subtext0
+                                }
+                            }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
