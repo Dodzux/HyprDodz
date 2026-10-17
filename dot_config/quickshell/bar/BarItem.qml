@@ -50,6 +50,9 @@ Rectangle {
                 : hovered ? glass(0.10)
                 : glass(0)
 
+    scale: pressed ? 0.96 : hovered || focused ? 1.045 : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motionFast; easing.type: Easing.OutCubic } }
+
     Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.InOutQuad } }
     Behavior on border.color { ColorAnimation { duration: 180; easing.type: Easing.InOutQuad } }
 

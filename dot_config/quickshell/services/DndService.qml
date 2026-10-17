@@ -1,12 +1,14 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 
-QtObject {
+Singleton {
     id: self
-
-    property bool isEnabled: false
-
-    function toggle() {
-        isEnabled = !isEnabled;
+    PersistentProperties {
+        id: saved
+        reloadableId: "notification-dnd"
+        property bool enabled: false
     }
+    property alias isEnabled: saved.enabled
+    function toggle() { isEnabled = !isEnabled; }
 }

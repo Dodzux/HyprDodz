@@ -18,6 +18,9 @@ Rectangle {
     radius: 12
     antialiasing: true
 
+    scale: itemHover.hovered || isSelected ? 1.015 : 1
+    Behavior on scale { NumberAnimation { duration: Theme.motionFast; easing.type: Easing.OutCubic } }
+
     color: (itemHover.hovered || isSelected) ? Theme.bgSelection : "transparent"
     border.color: (itemHover.hovered || isSelected) ? Theme.glassBorder : "transparent"
     border.width: 1

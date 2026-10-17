@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 import qs
 
@@ -9,6 +11,44 @@ Row {
     // No Row spacing: each slot carries its own 6px gap inside its animated
     // width, so a slot sliding in or out never makes the spacing jump.
     spacing: 0
+    property var peekClients: []
+    property int requestedPeek: 0
+    property int activePeek: 0
+    function requestPeek(id) {
+        requestedPeek = id;
+        if (!clientFetch.running) clientFetch.running = true;
+    }
+    function closePeekFor(id) {
+        if (requestedPeek === id) requestedPeek = 0;
+        if (activePeek === id) activePeek = 0;
+    }
+    Process {
+        id: clientFetch
+        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "workspaces"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    workspaces.peekClients = JSON.parse(this.text);
+                    workspaces.activePeek = workspaces.peekClients.some(c => c.workspace === String(workspaces.requestedPeek)) ? workspaces.requestedPeek : 0;
+                }
+                catch (error) { console.warn("Workspace peek:", error); }
+            }
+        }
+    }
+    Component.onCompleted: {
+        Hyprland.refreshToplevels();
+    }
+    Timer {
+        id: refreshPeek
+        interval: 90
+        onTriggered: if (workspaces.requestedPeek > 0 && !clientFetch.running) clientFetch.running = true
+    }
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (workspaces.requestedPeek > 0 && /^(openwindow|closewindow|movewindow)/.test(event.name)) refreshPeek.restart();
+        }
+    }
 
     // Workspaces are matched by *name*, not id. On Hyprland 0.56.2 + quickshell
     // 0.3.1, workspaces that existed before quickshell (re)started are
@@ -33,7 +73,6 @@ Row {
     // A fresh quickshell only learns about windows from open/close events, so
     // windows that already existed at (re)start never marked their workspace
     // occupied. Pull the current client list once up front.
-    Component.onCompleted: Hyprland.refreshToplevels()
 
     function goTo(target) {
         Hyprland.dispatch("hl.dsp.focus({ workspace = " + target + " })");
@@ -79,7 +118,50 @@ Row {
 
                 activeFocusOnTab: true
 
-                HoverHandler { id: wsHover }
+                HoverHandler {
+                    id: wsHover
+                    onHoveredChanged: {
+                        if (hovered) { closePeek.stop(); openPeek.restart(); }
+                        else { openPeek.stop(); closePeek.restart(); }
+                    }
+                }
+                Timer {
+                    id: openPeek
+                    interval: 260
+                    onTriggered: workspaces.requestPeek(wsRect.wsId)
+                }
+                Timer { id: closePeek; interval: 180; onTriggered: { if (!peekHover.hovered) workspaces.closePeekFor(wsRect.wsId); } }
+                PopupWindow {
+                    id: peekWindow
+                    anchor.item: wsRect
+                    anchor.rect.y: wsRect.height + 8
+                    implicitWidth: 220
+                    implicitHeight: 150
+                    color: "transparent"
+                    readonly property bool opened: workspaces.activePeek === wsRect.wsId
+                    property real reveal: opened ? 1 : 0
+                    Behavior on reveal { NumberAnimation { duration: peekWindow.opened ? Theme.motionNormal : Theme.motionExit; easing.type: Easing.OutCubic } }
+                    visible: opened || reveal > 0.001
+                    WorkspacePeek {
+                        anchors.fill: parent
+                        opacity: peekWindow.reveal
+                        scale: 0.96 + 0.04 * peekWindow.reveal
+                        transform: Translate { y: -5 * (1 - peekWindow.reveal) }
+                        workspaceId: String(wsRect.wsId)
+                        clients: workspaces.peekClients
+                        HoverHandler {
+                            id: peekHover
+                            onHoveredChanged: {
+                                if (hovered) closePeek.stop();
+                                else closePeek.restart();
+                            }
+                        }
+                        onSelected: client => {
+                            workspaces.closePeekFor(wsRect.wsId);
+                            Hyprland.dispatch('hl.dsp.focus({ window = "address:' + client.address + '" })');
+                        }
+                    }
+                }
                 // Highlight when focused, hovered, or occupied
                 color: {
                     if (isFocused) return Theme.bgSelection;

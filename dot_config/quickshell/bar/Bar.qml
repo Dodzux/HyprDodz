@@ -57,6 +57,7 @@ PanelWindow {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             height: 38
+            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             width: leftRow.implicitWidth + 24
             color: Theme.glassBg
             radius: 19
@@ -76,6 +77,7 @@ PanelWindow {
         Rectangle {
             anchors.centerIn: parent
             height: 38
+            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             width: centerRow.implicitWidth + 32
             color: Theme.glassBg
             radius: 19
@@ -93,11 +95,12 @@ PanelWindow {
             }
         }
 
-        // RIGHT MODULE: SysMonitor, Keyboard, Audio, Mic, Network, Battery, Notifications, Tray, Power
+        // RIGHT MODULE: SysMonitor, Keyboard, Audio, Mic, Brightness, Network, Battery, Notifications, Tray, Power
         Rectangle {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             height: 38
+            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             width: rightRow.implicitWidth + 24
             color: Theme.glassBg
             radius: 19
@@ -111,6 +114,7 @@ PanelWindow {
                 KeyboardLayout {}
                 AudioWidget {}
                 MicWidget {}
+                BrightnessWidget {}
                 NetworkWidget {
                     parentWindow: bar
                 }   // icon + ↓↑ speeds (was NetworkSpeedWidget + NetworkWidget)

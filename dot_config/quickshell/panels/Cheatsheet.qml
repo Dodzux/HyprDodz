@@ -202,6 +202,7 @@ PanelWindow {
     // ▓▒░ CENTERED PANEL CARD
     Rectangle {
         id: card
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 820
         height: Math.min(600, sheet.height * 0.74)
         anchors.horizontalCenter: parent.horizontalCenter
@@ -409,7 +410,10 @@ PanelWindow {
                     topMargin: 6
                     leftMargin: 4
                 }
-                model: sheet.displayRows
+                model: ScriptModel { values: sheet.displayRows }
+                add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
+                remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+                displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                 currentIndex: -1
                 clip: true
                 highlightMoveDuration: 80

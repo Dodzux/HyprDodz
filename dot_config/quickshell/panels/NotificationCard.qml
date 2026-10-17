@@ -26,10 +26,13 @@ Rectangle {
 
     readonly property bool isCritical: notification && notification.urgency === NotificationUrgency.Critical
     // Array.from: `actions` is a QList sequence, not guaranteed a real JS array.
-    readonly property var allActions: notification ? Array.from(notification.actions) : []
+    readonly property var allActions: notification ? Array.from(notification.actions).filter(a => a !== null) : []
     readonly property var defaultAction: allActions.find(a => a.identifier === "default") || null
     readonly property var buttonActions: allActions.filter(a => a.identifier !== "default")
     readonly property bool hovered: cardHover.hovered
+    // Retain a closing notification while a history row plays its exit transition.
+    RetainableLock { id: lifetime; object: card.notification; locked: true }
+    enabled: !lifetime.retained
 
     implicitHeight: content.implicitHeight + 24
     color: Theme.glassBg
@@ -237,7 +240,7 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                         }
                         TapHandler {
-                            onTapped: card.notification.dismiss()
+                            onTapped: { if (card.notification) card.notification.dismiss(); }
                         }
                     }
                 }
@@ -299,7 +302,7 @@ Rectangle {
                     Text {
                         id: actionText
                         anchors.centerIn: parent
-                        text: actionBtn.modelData.text
+                        text: actionBtn.modelData ? actionBtn.modelData.text : ""
                         color: Theme.text
                         font.family: Theme.fontMain
                         font.pixelSize: 11
@@ -312,7 +315,7 @@ Rectangle {
                         cursorShape: Qt.PointingHandCursor
                     }
                     TapHandler {
-                        onTapped: actionBtn.modelData.invoke()
+                        onTapped: { if (actionBtn.modelData) actionBtn.modelData.invoke(); }
                     }
                 }
             }

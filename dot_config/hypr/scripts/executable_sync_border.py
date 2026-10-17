@@ -261,6 +261,33 @@ def render(template, path, tokens):
     write_atomic(path, new)
 
 
+def update_qt_palette(hex_color, config_dir=None):
+    """Keep all current Qt palette roles in sync for applications loading the theme."""
+    config_dir = config_dir or os.path.expanduser("~/.config/qt6ct")
+    scheme = os.path.join(config_dir, "colors", "quickshell.conf")
+    if not os.path.isfile(scheme):
+        return
+    with open(scheme) as stream:
+        content = stream.read()
+    foreground = on_accent(hex_color)
+    def colors(match):
+        values = [value.strip() for value in match[2].split(",")]
+        if len(values) < 21:
+            return match[0]
+        enabled = match[1] != "disabled_colors"
+        if enabled:
+            values[12], values[13] = "#ff" + hex_color, "#ff" + foreground
+        if len(values) == 21:
+            values.append(values[12])  # Qt 6.6+ Accent role.
+        if enabled:
+            values[21] = "#ff" + hex_color
+        return match[1] + "=" + ", ".join(values)
+    updated = re.sub(r"^(active_colors|inactive_colors|disabled_colors)=(.*)$", colors, content, flags=re.M)
+    if updated == content:
+        return
+    write_atomic(scheme, updated)
+
+
 def apply_files(hex_color, token):
     """Keep unrelated targets working if an optional configuration cannot be written."""
     errors = []
@@ -308,6 +335,7 @@ def apply_files(hex_color, token):
     rewrite("~/.config/qt6ct/qss/hyprblur-round.qss", [
         (r"#[0-9a-fA-F]{6};([ \t]*/\* accent \*/)", rf"#{hex_color};\g<1>"),
     ])
+    guarded('update_qt_palette', hex_color)
     rewrite("~/.config/starship.toml", [
         (r'^accent[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent = "#{hex_color}"'),
         (r'^accent2[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent2 = "#{companion(hex_color)}"'),

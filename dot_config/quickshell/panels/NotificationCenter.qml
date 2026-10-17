@@ -26,7 +26,7 @@ PanelWindow {
     exclusiveZone: -1
 
     // Newest first
-    readonly property var entries: notificationServer.trackedNotifications.values.slice().reverse()
+    readonly property var entries: notificationServer.trackedNotifications.values.filter(n => !n.transient).slice().reverse()
 
     // Reference time for the "5m" ages, moved on every open.
     property date openedAt: new Date()
@@ -45,6 +45,9 @@ PanelWindow {
 
     Rectangle {
         id: card
+        scale: centerPopup.visible ? 1 : 0.97
+        Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.topMargin: 48
@@ -151,11 +154,17 @@ PanelWindow {
                 spacing: 8
                 boundsBehavior: Flickable.StopAtBounds
                 model: ScriptModel { values: centerPopup.entries }
+            add: Transition {
+                NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
+            }
+            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+
 
                 delegate: NotificationCard {
                     required property var modelData
                     notification: modelData
-                    receivedAt: centerPopup.receivedTimes[modelData.id] || null
+                    receivedAt: modelData ? centerPopup.receivedTimes[modelData.id] || null : null
                     now: centerPopup.openedAt
                     width: listView.width
                     // Following a notification's default action goes to the

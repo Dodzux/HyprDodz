@@ -22,14 +22,47 @@ Scope {
 
     property real brightnessLevel: 0
     property bool brightnessPending: false
+    property bool brightnessShowPending: false
+    property int brightnessTarget: -1
+    property int brightnessSent: -1
+    readonly property int brightnessPct: Math.round(brightnessLevel * 100)
 
-    // Read only on a brightness-key request. Coalesce repeats while a read is
-    // running so the last keypress is reflected without starting a poller.
-    function requestBrightness() {
+    // One shared read on startup, keys, or bar hover; no permanent polling.
+    function refreshBrightness(showPopup) {
+        brightnessShowPending = brightnessShowPending || showPopup;
         if (brightnessRead.running) {
             brightnessPending = true;
         } else {
             brightnessRead.running = true;
+        }
+    }
+    function requestBrightness() { refreshBrightness(true); }
+    Component.onCompleted: refreshBrightness(false)
+
+    function setBrightness(percent) {
+        if (!isFinite(percent)) return;
+        brightnessTarget = Math.max(1, Math.min(100, Math.round(percent)));
+        brightnessLevel = brightnessTarget / 100;
+        show("brightness");
+        writeBrightness();
+    }
+    function adjustBrightness(step) { setBrightness(brightnessPct + step); }
+    function writeBrightness() {
+        if (brightnessWrite.running || brightnessTarget < 0) return;
+        brightnessSent = brightnessTarget;
+        brightnessWrite.command = ["brightnessctl", "-c", "backlight", "-n1", "set", brightnessSent + "%"];
+        brightnessWrite.running = true;
+    }
+
+    Process {
+        id: brightnessWrite
+        onExited: (exitCode) => {
+            if (exitCode !== 0) console.warn("Brightness update failed:", exitCode);
+            if (osd.brightnessTarget !== osd.brightnessSent) Qt.callLater(osd.writeBrightness);
+            else {
+                osd.brightnessTarget = -1;
+                osd.requestBrightness();
+            }
         }
     }
 
@@ -47,14 +80,16 @@ Scope {
                 var fields = this.text.trim().split(",");
                 var percentage = Number((fields[3] || "").replace("%", ""));
                 if (fields[1] !== "backlight" || !/%$/.test(fields[3] || "") || !isFinite(percentage)) return;
-                osd.brightnessLevel = Math.max(0, Math.min(100, percentage)) / 100;
-                osd.show("brightness");
+                if (osd.brightnessTarget < 0)
+                    osd.brightnessLevel = Math.max(0, Math.min(100, percentage)) / 100;
+                if (osd.brightnessShowPending) osd.show("brightness");
+                osd.brightnessShowPending = false;
             }
         }
         onExited: {
             if (osd.brightnessPending) {
                 osd.brightnessPending = false;
-                Qt.callLater(osd.requestBrightness);
+                Qt.callLater(() => osd.refreshBrightness(false));
             }
         }
     }

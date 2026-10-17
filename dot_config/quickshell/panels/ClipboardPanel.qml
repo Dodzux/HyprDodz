@@ -103,6 +103,7 @@ PanelWindow {
     // ▓▒░ CENTERED PANEL CARD
     Rectangle {
         id: clipboardPanel
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 600
         height: Math.min(500, Math.max(160, headerBox.height + 20 + itemList.contentHeight + 20 + footerBox.height))
         anchors.centerIn: parent
@@ -192,7 +193,16 @@ PanelWindow {
                 bottomMargin: 6
             }
 
-            model: clipboardWindow.filteredItems
+            model: ScriptModel {
+                values: clipboardWindow.filteredItems
+                onValuesChanged: Qt.callLater(() => { itemList.currentIndex = values.length ? 0 : -1; })
+            }
+            add: Transition {
+                NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
+            }
+            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+
             currentIndex: 0
             clip: true
             highlightMoveDuration: Theme.launcherSelectionDuration

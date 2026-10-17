@@ -142,6 +142,10 @@ PanelWindow {
     }
 
     Rectangle {
+        id: calendarRect
+        scale: calendarPopup.visible ? 1 : 0.97
+        Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
         anchors.topMargin: 52
         width: 260

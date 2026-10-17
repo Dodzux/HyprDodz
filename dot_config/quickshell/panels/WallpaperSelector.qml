@@ -10,6 +10,10 @@ import qs
 PanelWindow {
     id: wallpaperWindow
     visible: false
+    function choose(item) {
+        Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/awww_transition.sh", item.path]);
+        visible = false;
+    }
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-wallpaper-selector"
@@ -31,20 +35,12 @@ PanelWindow {
 
     Process {
         id: findProc
-        command: ["bash", "-c", "find ~/Pictures/Wallpapers -maxdepth 1 -type f -iregex '.*\\.\\(jpg\\|jpeg\\|png\\|webp\\|gif\\)$'"]
+        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "palettes",
+                  "--cache", Quickshell.env("HOME") + "/.cache/quickshell/wallpaper-palettes"]
         stdout: StdioCollector {
             onStreamFinished: {
-                var lines = this.text.split("\n");
-                var items = [];
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim();
-                    if (line) {
-                        var name = line.substring(line.lastIndexOf("/") + 1);
-                        items.push({ path: line, name: name });
-                    }
-                }
-                items.sort(function(a,b) { return a.name.localeCompare(b.name); });
-                wallpaperWindow.wallpapers = items;
+                try { wallpaperWindow.wallpapers = JSON.parse(this.text); }
+                catch (error) { console.warn("Wallpaper palette:", error); }
             }
         }
     }
@@ -56,6 +52,7 @@ PanelWindow {
 
     Rectangle {
         id: panelCard
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 840
         height: Math.min(600, Math.max(160, 12 + headerBox.height + 12 + gridList.contentHeight + 12))
         anchors.centerIn: parent
@@ -118,7 +115,7 @@ PanelWindow {
                         if (wallpaperWindow.filteredWallpapers.length > 0) {
                             var entry = wallpaperWindow.filteredWallpapers[gridList.currentIndex]
                             if (entry) {
-                                Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/awww_transition.sh \"$1\"", "--", entry.path])
+                                wallpaperWindow.choose(entry)
                                 wallpaperWindow.visible = false
                             }
                         }
@@ -135,13 +132,21 @@ PanelWindow {
                 right: parent.right
                 bottom: parent.bottom
                 margins: 12
+                bottomMargin: 12
                 topMargin: 12
             }
             
             cellWidth: Math.floor((width - 8) / 4)
-            cellHeight: Math.floor((cellWidth / 16) * 9) + 40
+            cellHeight: Math.floor((cellWidth / 16) * 9) + 61
             
-            model: wallpaperWindow.filteredWallpapers
+            model: ScriptModel {
+                values: wallpaperWindow.filteredWallpapers
+                objectProp: "path"
+                onValuesChanged: Qt.callLater(() => { gridList.currentIndex = values.length ? 0 : -1; })
+            }
+            add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
+            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             currentIndex: 0
             clip: true
             highlightMoveDuration: Theme.launcherSelectionDuration
@@ -212,6 +217,24 @@ PanelWindow {
                             }
                         }
                         
+                        Row {
+                            Layout.alignment: Qt.AlignHCenter
+                            spacing: 4
+                            Repeater {
+                                model: wallpaperTile.modelData.swatches || []
+                                Rectangle {
+                                    required property var modelData
+                                    required property int index
+                                    width: index === 0 ? 22 : 14
+                                    height: 8
+                                    radius: 4
+                                    color: modelData
+                                    border.width: 1
+                                    border.color: Theme.glassBorder
+                                }
+                            }
+                        }
+
                         Text {
                             text: modelData.name
                             color: wallpaperTile.highlighted ? Theme.accent : Theme.text
@@ -230,7 +253,7 @@ PanelWindow {
                     TapHandler {
                         onTapped: {
                             gridList.currentIndex = index
-                            Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/awww_transition.sh \"$1\"", "--", modelData.path])
+                            wallpaperWindow.choose(modelData)
                             wallpaperWindow.visible = false
                         }
                     }

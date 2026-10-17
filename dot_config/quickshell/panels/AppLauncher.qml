@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import "../DesktopActions.js" as Actions
 
 // AppLauncher — replaces rofi -show drun
 // Triggered by: SUPER+A (global shortcut)
@@ -14,6 +15,24 @@ import qs
 PanelWindow {
     id: launcherWindow
     visible: false
+    property alias queryText: searchInput.text
+    property var shortcutHints: ({})
+    readonly property bool actionMode: searchInput.text.trim().startsWith(">")
+    function showLauncher() {
+        searchInput.text = "";
+        visible = true;
+        hintsProc.running = true;
+    }
+    Process {
+        id: hintsProc
+        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "shortcuts"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try { launcherWindow.shortcutHints = JSON.parse(this.text); }
+                catch (error) { console.warn("Shortcut hints:", error); }
+            }
+        }
+    }
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-launcher"
@@ -38,8 +57,7 @@ PanelWindow {
             if (scr) {
                 launcherWindow.screen = scr;
             }
-            searchInput.text = "";
-            launcherWindow.visible = true;
+            launcherWindow.showLauncher();
         }
     }
 
@@ -59,6 +77,13 @@ PanelWindow {
     // interactively launched applications. Each app then gets its own cgroup, so it
     // can be inspected and stopped on its own:  systemctl --user list-units --type=scope
     function launchApp(app) {
+        if (app.desktopAction) {
+            if (app.id === "action:brightness")
+                root.brightnessController.setBrightness(parseInt(app.command[app.command.length - 1]));
+            else Quickshell.execDetached(app.command);
+            launcherWindow.visible = false;
+            return;
+        }
         var cmdList = [];
         if (app.command) {
             cmdList = app.command.filter(function(arg) {
@@ -87,6 +112,7 @@ PanelWindow {
     property var filteredApps: {
         var q = searchInput.text.toLowerCase().trim()
         var all = DesktopEntries.applications.values
+        if (actionMode) return Actions.rows(q);
         if (!q) return all
         return all.filter(function(app) {
             return app.name.toLowerCase().includes(q)
@@ -100,6 +126,7 @@ PanelWindow {
     // ▓▒░ CENTERED PANEL CARD
     Rectangle {
         id: launcherPanel
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 600
         height: Math.min(380, Math.max(160, headerBox.height + 20 + appList.contentHeight + 20))
         anchors.horizontalCenter: parent.horizontalCenter
@@ -154,7 +181,7 @@ PanelWindow {
                     // so we layer a Text behind it
                     Text {
                         anchors.fill: parent
-                        text: "Search..."
+                        text: "Search apps, or > for quick actions"
                         color: Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 14
@@ -177,7 +204,7 @@ PanelWindow {
 
                 // Result count badge
                 Text {
-                    text: launcherWindow.filteredApps.length + " apps"
+                    text: launcherWindow.filteredApps.length + (launcherWindow.actionMode ? " actions" : " apps")
                     color: Theme.subtext0
                     font.family: Theme.fontMain
                     font.pixelSize: 11
@@ -198,7 +225,16 @@ PanelWindow {
                 topMargin: 6
             }
 
-            model: launcherWindow.filteredApps
+            model: ScriptModel {
+                values: launcherWindow.filteredApps
+                onValuesChanged: Qt.callLater(() => { appList.currentIndex = values.length ? 0 : -1; })
+            }
+            add: Transition {
+                NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
+            }
+            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+
             onModelChanged: Qt.callLater(function() {
                 appList.currentIndex = appList.count > 0 ? 0 : -1;
                 appList.positionViewAtBeginning();
@@ -305,6 +341,25 @@ PanelWindow {
                             elide: Text.ElideRight
                             visible: text.length > 0
                             renderType: Text.NativeRendering
+                        }
+                    }
+
+                    Rectangle {
+                        readonly property string shortcut: launcherWindow.shortcutHints[appRow.modelData.id] || ""
+                        visible: shortcut.length > 0
+                        implicitWidth: hintText.implicitWidth + 14
+                        implicitHeight: 24
+                        radius: 6
+                        color: appRow.highlighted ? Theme.launcherSelectionBg : Theme.bgSelection
+                        border.width: 1
+                        border.color: appRow.highlighted ? Theme.launcherSelectionBorder : Theme.glassBorder
+                        Text {
+                            id: hintText
+                            anchors.centerIn: parent
+                            text: parent.shortcut
+                            font.family: Theme.fontMain
+                            font.pixelSize: 10
+                            color: appRow.highlighted ? Theme.accent : Theme.subtext0
                         }
                     }
 

@@ -33,6 +33,10 @@ Singleton {
     readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.08)    // Ultra-thin luminous border
     readonly property color activeGlow: Qt.rgba(1, 1, 1, 0.15)    // Active highlight backdrop glow
 
+    readonly property int motionFast: 140
+    readonly property int motionNormal: 210
+    readonly property int motionExit: 150
+
     // Shared motion and accent tint for the three selection panels.
     readonly property int launcherSelectionDuration: 150
     readonly property color launcherSelectionBg: Qt.rgba(accent.r, accent.g, accent.b, 0.14)

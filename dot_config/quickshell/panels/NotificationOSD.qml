@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.Notifications
+import qs
 import qs.services
 
 // Popup stack, top-right. Lives directly in ShellRoot (not inside Variants).
@@ -53,6 +54,8 @@ Item {
     Connections {
         target: osdRoot.notificationServer
         function onNotification(notification) {
+            // History is re-emitted on hot reload; keep it out of the popup stack.
+            if (notification.lastGeneration) return;
             // shell.qml has already set tracked = true, so the object outlives
             // this handler. Drop the popup the moment the notification closes,
             // whoever closed it (us, the app, or the history panel).
@@ -99,6 +102,7 @@ Item {
             anchors.right: parent.right
             anchors.top: parent.top
             spacing: 10
+            move: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
             Repeater {
                 // ScriptModel diffs by object identity, so adding a popup does
@@ -111,7 +115,7 @@ Item {
                     id: popupCard
                     required property var modelData
                     notification: modelData
-                    receivedAt: osdRoot.receivedTimes[modelData.id] || null
+                    receivedAt: modelData ? osdRoot.receivedTimes[modelData.id] || null : null
                     width: osdColumn.width
 
                     // Clicking a popup acknowledges it; it stays in history.
@@ -121,11 +125,24 @@ Item {
                     // otherwise 5s. Critical notifications stay until handled.
                     // Hovering pauses the countdown so a popup never vanishes
                     // while it is being read. expireTimeout is milliseconds
-                    // (`notify-send -t 1500` reads back 1500), -1/0 = default.
+                    // (`notify-send -t 1500` reads back 1500). -1 uses the
+                    // default; 0 explicitly requests no expiry.
+                    readonly property real timeoutMs: modelData ? modelData.expireTimeout : 0
+                    function restartExpiry() {
+                        if (modelData && timeoutMs !== 0 && !isCritical && !hovered) expiry.restart();
+                    }
+                    Connections {
+                        target: popupCard.modelData
+                        function onSummaryChanged() { popupCard.restartExpiry(); }
+                        function onBodyChanged() { popupCard.restartExpiry(); }
+                        function onExpireTimeoutChanged() { popupCard.restartExpiry(); }
+                    }
                     Timer {
-                        interval: popupCard.modelData.expireTimeout > 0 ? popupCard.modelData.expireTimeout : 5000
-                        running: !popupCard.isCritical && !popupCard.hovered
+                        id: expiry
+                        interval: popupCard.timeoutMs > 0 ? popupCard.timeoutMs : 5000
+                        running: popupCard.modelData !== null && popupCard.timeoutMs !== 0 && !popupCard.isCritical && !popupCard.hovered
                         onTriggered: {
+                            if (!popupCard.modelData) return;
                             // Transient notifications ask not to be kept at all.
                             if (popupCard.modelData.transient)
                                 popupCard.modelData.expire();

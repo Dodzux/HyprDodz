@@ -5,9 +5,23 @@ import Quickshell.Widgets
 import Quickshell.Wayland
 import qs
 
-Row {
+ListView {
     id: taskbar
+    orientation: ListView.Horizontal
     spacing: 6
+    interactive: false
+    clip: false
+    implicitWidth: Math.max(0, count * 34 - 6)
+    implicitHeight: 28
+    width: implicitWidth
+    height: implicitHeight
+    model: ToplevelManager.toplevels
+    add: Transition {
+        NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
+    }
+    remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+    displaced: Transition { NumberAnimation { properties: "x"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+
 
     // App-identity overrides, keyed on the Wayland appId only — never on the
     // window title, which is page/document content an app doesn't control.
@@ -109,17 +123,16 @@ Row {
         return Quickshell.iconPath(iconName);
     }
 
-    Repeater {
-        model: ToplevelManager.toplevels
-
         // BarItem: the bar's shared hover / focus / press look (accent tint).
         delegate: BarItem {
             id: taskItem
+            required property var modelData
+            enabled: modelData !== null
             width: 28
             // Toplevel's property is `activated`. The old code read `active`,
             // which doesn't exist, so the active-window glow and accent
             // underline never showed.
-            selected: modelData.activated
+            selected: modelData ? modelData.activated : false
 
             // Active window pill indicator
             Rectangle {
@@ -127,11 +140,11 @@ Row {
                 anchors.bottomMargin: 1
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 3
-                width: modelData.activated ? 12 : ((hoverHandler.hovered || taskItem.activeFocus) ? 6 : 0)
+                width: (modelData && modelData.activated) ? 12 : ((hoverHandler.hovered || taskItem.activeFocus) ? 6 : 0)
                 radius: 1.5
                 antialiasing: true
-                color: modelData.activated ? Theme.accent : Theme.subtext0
-                opacity: modelData.activated || hoverHandler.hovered || taskItem.activeFocus ? 1.0 : 0.0
+                color: (modelData && modelData.activated) ? Theme.accent : Theme.subtext0
+                opacity: (modelData && modelData.activated) || hoverHandler.hovered || taskItem.activeFocus ? 1.0 : 0.0
 
                 Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                 Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -152,15 +165,15 @@ Row {
                 // TUI program. Every other window's icon binds on appId alone,
                 // so switching browser tabs etc. no longer reloads the icon.
                 source: {
-                    const id = (modelData.appId || "").toLowerCase();
+                    const id = (modelData ? modelData.appId || "" : "").toLowerCase();
                     const isTerminal = taskbar.terminalAppIds.some(t => id.includes(t));
-                    return taskbar.getAppIcon(isTerminal ? modelData.title : "", modelData.appId);
+                    return taskbar.getAppIcon(isTerminal && modelData ? modelData.title : "", modelData ? modelData.appId : "");
                 }
 
                 // Pacman remains yellow; pellets follow the live theme accent.
                 PacmanPellets {
                     anchors.fill: parent
-                    visible: (modelData.appId || "").toLowerCase().includes("cachy")
+                    visible: (modelData ? modelData.appId || "" : "").toLowerCase().includes("cachy")
                              && parent.status === Image.Ready
                 }
 
@@ -188,5 +201,4 @@ Row {
                 }
             }
         }
-    }
 }

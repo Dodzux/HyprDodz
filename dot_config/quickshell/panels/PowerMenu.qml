@@ -108,6 +108,9 @@ PanelWindow {
 
     Rectangle {
         id: powerMenuRect
+        scale: powerMenuPopup.visible ? 1 : 0.97
+        Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         anchors { top: parent.top; right: parent.right }
         anchors.topMargin: 52
         anchors.rightMargin: 16

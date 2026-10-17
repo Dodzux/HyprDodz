@@ -22,9 +22,21 @@ ShellRoot {
 
     // Notifications that arrived since the history panel was last opened —
     // the count on the bar bell.
-    property int unreadNotifications: 0
+    property alias brightnessController: volumeOsd
+    property alias unreadNotifications: notificationState.unread
     // Arrival time per notification id; Notification itself has no timestamp.
-    property var receivedTimes: ({})
+    readonly property var receivedTimes: {
+        var saved = JSON.parse(notificationState.timesJson);
+        var dates = {};
+        Object.keys(saved).forEach(id => dates[id] = new Date(saved[id]));
+        return dates;
+    }
+    PersistentProperties {
+        id: notificationState
+        reloadableId: "notification-state"
+        property int unread: 0
+        property string timesJson: "{}"
+    }
 
     /**
      * Finds the screen matching the currently focused Hyprland monitor.
@@ -146,9 +158,11 @@ ShellRoot {
         // history, and every later dismiss() threw "is not a function".
         onNotification: (notification) => {
             notification.tracked = true;
-            root.receivedTimes[notification.id] = new Date();
-            root.receivedTimesChanged();
-            if (!notificationCenter.visible) root.unreadNotifications++;
+            if (notification.lastGeneration) return;
+            var times = JSON.parse(notificationState.timesJson);
+            times[notification.id] = new Date().toISOString();
+            notificationState.timesJson = JSON.stringify(times);
+            if (!notification.transient && !notificationCenter.visible) root.unreadNotifications++;
         }
     }
 
@@ -168,7 +182,7 @@ ShellRoot {
     }
 
     // ▓▒░ VOLUME / MIC OSD — follows PipeWire, whatever changed the level
-    VolumeOSD {}
+    VolumeOSD { id: volumeOsd }
 
     // ▓▒░ APP LAUNCHER — SUPER+A (GlobalShortcut registered inside AppLauncher.qml)
     // Replaces: rofi -show drun

@@ -476,6 +476,7 @@ PanelWindow {
 
     Rectangle {
         id: card
+        Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 380
         x: Math.max(12, Math.min(panel.width - width - 12, panel.anchorX - width / 2))
         y: 48
