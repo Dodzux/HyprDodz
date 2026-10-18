@@ -53,27 +53,35 @@ Rectangle {
         return new RegExp("\\b" + key + "\\b").test(str);
     }
 
-    function iconSource() {
+    // The icon provider draws a checkerboard and reports Ready on failure.
+    // Load absolute paths directly so Qt exposes Error and we can fall back.
+    function imageUrl(value) {
+        var source = String(value || "");
+        if (source.startsWith("image://icon/"))
+            source = source.slice("image://icon/".length);
+        if (source.startsWith("/"))
+            return "file://" + source;
+        if (/^(file:|image:|data:|https?:)/.test(source))
+            return source;
+        return source && Quickshell.hasThemeIcon(source) ? "image://icon/" + source : "";
+    }
+
+    function iconCandidates() {
         var n = card.notification;
         if (!n)
-            return "";
-        // An inline image (avatar, album art, screenshot) beats the app icon.
-        if (n.image)
-            return n.image;
-        var iconStr = n.appIcon;
-        if (iconStr) {
-            if (iconStr.startsWith("/") || iconStr.startsWith("file://"))
-                return iconStr;
-            if (Quickshell.hasThemeIcon(iconStr))
-                return "image://icon/" + iconStr;
+            return [];
+        var candidates = [];
+        function add(value, inlineImage) {
+            var url = imageUrl(value);
+            if (url && !candidates.some(c => c.url === url))
+                candidates.push({url: url, inlineImage: inlineImage});
         }
-        // Fall back to the sender's real desktop entry (recovers a correct
-        // icon for e.g. notify-send, which reports no usable icon name).
+        add(n.image, true);
+        add(n.appIcon, false);
         var entry = DesktopEntries.heuristicLookup(n.desktopEntry || n.appName || "");
-        if (entry && entry.icon) {
-            return entry.icon.startsWith("/") ? entry.icon : "image://icon/" + entry.icon;
-        }
-        return "";
+        if (entry)
+            add(entry.icon, false);
+        return candidates;
     }
 
     function appDisplayName() {
@@ -162,11 +170,23 @@ Rectangle {
                     id: notifImg
                     anchors.centerIn: parent
                     // Inline images fill the badge; theme icons stay icon-sized.
-                    readonly property bool isInlineImage: card.notification && !!card.notification.image
+                    readonly property var candidates: {
+                        // Retry desktop lookup when its initial scan finishes.
+                        DesktopEntries.applications.values;
+                        return card.iconCandidates();
+                    }
+                    property int candidateIndex: 0
+                    readonly property var candidate: candidates[candidateIndex] || null
+                    readonly property bool isInlineImage: candidate ? candidate.inlineImage : false
+                    onCandidatesChanged: candidateIndex = 0
+                    onStatusChanged: {
+                        if (status === Image.Error && candidateIndex < candidates.length)
+                            candidateIndex++;
+                    }
                     width: isInlineImage ? 36 : 22
                     height: width
                     sourceSize: Qt.size(width * 2, height * 2)
-                    source: card.iconSource()
+                    source: candidate ? candidate.url : ""
                     fillMode: isInlineImage ? Image.PreserveAspectCrop : Image.PreserveAspectFit
                     smooth: true
                     asynchronous: true

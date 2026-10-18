@@ -10,7 +10,7 @@ hl.config({
     -- ▓▒░ GENERAL APPEARANCE
     general = {
         gaps_in     = 5,
-        gaps_out    = 20,
+        gaps_out    = { top = 20, right = 14, bottom = 20, left = 14 },
         border_size = 2,
         col = {
             -- Glowing semi-transparent gradient fading to complete transparency
@@ -54,7 +54,7 @@ hl.config({
             passes            = 3,
             noise             = 0.015,
             contrast          = 0.9,
-            brightness        = 0.8,
+            brightness        = 1.0,
             vibrancy          = 1.0,
             new_optimizations = true,
             ignore_opacity    = true,   -- already the default; kept explicit for clarity

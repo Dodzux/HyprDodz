@@ -1,16 +1,13 @@
-function y --description 'Run Yazi file manager, restore last path on launch and persist it on exit'
-    # Persistent file that stores the last visited directory across sessions
+function y --description 'Open Yazi in Home by default and follow its exit directory'
+    # Track the exit directory so the calling shell can follow it.
     set state_dir ~/.local/state/yazi
     set state_file $state_dir/last-dir
     mkdir -p $state_dir
 
-    # Determine the start path: use explicit arg if given, else restore last dir
+    # Explicit paths take precedence; otherwise always start in Home.
     set start_args $argv
-    if test (count $argv) -eq 0; and test -s "$state_file"
-        read -l last_dir < "$state_file"
-        if test -d "$last_dir"
-            set start_args "$last_dir"
-        end
+    if test (count $argv) -eq 0
+        set start_args "$HOME"
     end
 
     # Run yazi, writing the exit-cwd into the persistent state file

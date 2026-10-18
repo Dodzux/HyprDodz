@@ -28,6 +28,25 @@ PanelWindow {
     // Newest first
     readonly property var entries: notificationServer.trackedNotifications.values.filter(n => !n.transient).slice().reverse()
 
+    property var expandedGroups: ({})
+    readonly property var groups: {
+        var result = [], lookup = {};
+        entries.forEach(n => {
+            var key = "app:" + (n.desktopEntry || n.appName || String(n.id)).toLowerCase();
+            if (!lookup[key]) {
+                lookup[key] = {key: key, name: n.appName || "Notifications", notifications: []};
+                result.push(lookup[key]);
+            }
+            lookup[key].notifications.push(n);
+        });
+        return result;
+    }
+    function toggleGroup(key) {
+        var copy = Object.assign({}, expandedGroups);
+        copy[key] = !copy[key];
+        expandedGroups = copy;
+    }
+
     // Reference time for the "5m" ages, moved on every open.
     property date openedAt: new Date()
     onVisibleChanged: if (visible) openedAt = new Date()
@@ -153,7 +172,7 @@ PanelWindow {
                 clip: true
                 spacing: 8
                 boundsBehavior: Flickable.StopAtBounds
-                model: ScriptModel { values: centerPopup.entries }
+                model: ScriptModel { values: centerPopup.groups; objectProp: "key" }
             add: Transition {
                 NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
             }
@@ -161,15 +180,42 @@ PanelWindow {
             displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
 
-                delegate: NotificationCard {
+                delegate: Column {
+                    id: groupRow
                     required property var modelData
-                    notification: modelData
-                    receivedAt: modelData ? centerPopup.receivedTimes[modelData.id] || null : null
-                    now: centerPopup.openedAt
                     width: listView.width
-                    // Following a notification's default action goes to the
-                    // app — get out of the way.
-                    onActivated: if (defaultAction) centerPopup.visible = false
+                    spacing: 6
+                    readonly property bool expanded: centerPopup.expandedGroups[modelData.key] === true
+                    Rectangle {
+                        width: parent.width
+                        height: groupRow.modelData.notifications.length > 1 ? 30 : 0
+                        visible: height > 0
+                        radius: Theme.widgetRadius
+                        color: Theme.bgContainer
+                        Text {
+                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            text: (groupRow.expanded ? "▾ " : "▸ ") + groupRow.modelData.name + " · " + groupRow.modelData.notifications.length
+                            color: Theme.subtext0
+                            font.family: Theme.fontMain
+                            font.pixelSize: Theme.captionSize
+                        }
+                        activeFocusOnTab: true
+                        Keys.onReturnPressed: centerPopup.toggleGroup(groupRow.modelData.key)
+                        Keys.onSpacePressed: centerPopup.toggleGroup(groupRow.modelData.key)
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: centerPopup.toggleGroup(groupRow.modelData.key) }
+                    }
+                    Repeater {
+                        model: ScriptModel { values: groupRow.expanded ? groupRow.modelData.notifications : groupRow.modelData.notifications.slice(0, 1) }
+                        NotificationCard {
+                            required property var modelData
+                            notification: modelData
+                            receivedAt: modelData ? centerPopup.receivedTimes[modelData.id] || null : null
+                            now: centerPopup.openedAt
+                            width: groupRow.width
+                            onActivated: if (defaultAction) centerPopup.visible = false
+                        }
+                    }
                 }
             }
 

@@ -52,6 +52,13 @@ Singleton {
     readonly property int fontSize: 11
     readonly property int padding: 4
 
+    readonly property int panelRadius: 14
+    readonly property int titleSize: 16
+    readonly property int bodySize: 12
+    readonly property int captionSize: 10
+    readonly property int iconSize: 14
+    readonly property color onAccent: (0.299 * accent.r + 0.587 * accent.g + 0.114 * accent.b) > 0.57 ? "#111111" : "#ffffff"
+
     function applyAccent(hex) {
         var h = String(hex).trim().replace(/^#/, "");
         if (/^[0-9a-fA-F]{6}$/.test(h)) theme.accent = "#" + h;

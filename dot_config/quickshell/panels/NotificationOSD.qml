@@ -87,7 +87,7 @@ Item {
             right: true
         }
 
-        margins.top: 18
+        margins.top: 20
         margins.right: 16
 
         implicitWidth: 360
@@ -127,9 +127,27 @@ Item {
                     // while it is being read. expireTimeout is milliseconds
                     // (`notify-send -t 1500` reads back 1500). -1 uses the
                     // default; 0 explicitly requests no expiry.
-                    readonly property real timeoutMs: modelData ? modelData.expireTimeout : 0
+                    // Updater completion notices are useful to read, but need
+                    // not remain on screen until clicked. Keep history intact.
+                    readonly property bool isUpdateNotice: modelData !== null && String(modelData.appName || "").trim().toLowerCase() === "cachyos update"
+                    readonly property real timeoutMs: isUpdateNotice ? 12000 : (modelData ? modelData.expireTimeout : 0)
+                    readonly property bool mayExpire: isUpdateNotice || (timeoutMs !== 0 && !isCritical)
+                    property bool fadingOut: false
+                    opacity: fadingOut ? 0 : 1
+                    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Timer {
+                        id: fadeFinish
+                        interval: 230
+                        onTriggered: {
+                            if (!popupCard.modelData) return;
+                            if (popupCard.modelData.transient && !popupCard.isUpdateNotice)
+                                popupCard.modelData.expire();
+                            else
+                                osdRoot.removePopup(popupCard.modelData);
+                        }
+                    }
                     function restartExpiry() {
-                        if (modelData && timeoutMs !== 0 && !isCritical && !hovered) expiry.restart();
+                        if (modelData && mayExpire && !hovered && !fadingOut) expiry.restart();
                     }
                     Connections {
                         target: popupCard.modelData
@@ -140,14 +158,11 @@ Item {
                     Timer {
                         id: expiry
                         interval: popupCard.timeoutMs > 0 ? popupCard.timeoutMs : 5000
-                        running: popupCard.modelData !== null && popupCard.timeoutMs !== 0 && !popupCard.isCritical && !popupCard.hovered
+                        running: popupCard.modelData !== null && popupCard.mayExpire && !popupCard.hovered && !popupCard.fadingOut
                         onTriggered: {
                             if (!popupCard.modelData) return;
-                            // Transient notifications ask not to be kept at all.
-                            if (popupCard.modelData.transient)
-                                popupCard.modelData.expire();
-                            else
-                                osdRoot.removePopup(popupCard.modelData);
+                            popupCard.fadingOut = true;
+                            fadeFinish.start();
                         }
                     }
 

@@ -3530,11 +3530,11 @@
   <path
      id="window-normal"
      d="m380 814.26h30v30h-30z"
-     style="fill:#000000;fill-opacity:1" />
+     style="fill:#111111;fill-opacity:1" />
   <path
      id="window-normal-inactive"
      d="m412 814.26h30v30h-30z"
-     style="fill:#000000" />
+     style="fill:#111111" />
   <rect
      id="menubar-normal"
      x="307"

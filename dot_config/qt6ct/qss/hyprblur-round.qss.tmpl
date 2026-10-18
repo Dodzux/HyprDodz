@@ -1,47 +1,20 @@
-/* HyprBlur Round QSS for Fusion Style */
+/* Minimal neutral Qt surfaces; selection and focus use the live palette. */
 QPushButton, QToolButton, QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, QTimeEdit, QDateEdit, QDateTimeEdit {
-    border-radius: 6px;
-    padding: 4px 8px;
-    border: 1px solid #3d3d3d;
-    background-color: #1c1c1c;
-    color: #e5e5e5;
+    border-radius: 6px; padding: 4px 8px;
+    border: 1px solid #3d3d3d; background-color: #1c1c1c; color: #e5e5e5;
+    selection-background-color: palette(highlight); selection-color: palette(highlighted-text);
 }
-
-QPushButton:hover, QToolButton:hover, QComboBox:hover {
-    background-color: #2d2d2d;
-}
-
-QMenu {
-    border-radius: 8px;
-    border: 1px solid #3d3d3d;
-    background-color: #111111;
-    padding: 4px;
-}
-
-QMenu::item {
-    border-radius: 4px;
-    padding: 4px 20px 4px 20px;
-}
-
-QMenu::item:selected {
-    background-color: #2d2d2d;
-}
-
-QProgressBar {
-    border-radius: 4px;
-    border: 1px solid #3d3d3d;
-    background-color: #1c1c1c;
-}
-
-QProgressBar::chunk {
-    border-radius: 3px;
-    background-color: #{{ template "accent" . }}; /* accent */
-}
-
-QToolTip {
-    border-radius: 6px;
-    border: 1px solid #3d3d3d;
-    background-color: #111111;
-    color: #e5e5e5;
-    padding: 4px;
-}
+QPushButton:hover, QToolButton:hover, QComboBox:hover { background-color: #2d2d2d; }
+QLineEdit:focus, QComboBox:focus, QAbstractSpinBox:focus, QPushButton:focus { border-color: palette(highlight); }
+QPushButton:disabled, QToolButton:disabled, QComboBox:disabled, QLineEdit:disabled { color: #777777; border-color: #2d2d2d; }
+QToolBar QToolButton { border-color: transparent; background-color: transparent; padding: 4px; }
+QToolBar QToolButton:hover { background-color: #2d2d2d; }
+QToolBar QToolButton:checked { border-color: palette(highlight); background-color: #242424; }
+QMenu { border-radius: 8px; border: 1px solid #3d3d3d; background-color: #111111; padding: 4px; }
+QMenu::item { border-radius: 4px; padding: 4px 20px; }
+QMenu::item:selected { background-color: palette(highlight); color: palette(highlighted-text); }
+QMenu::item:disabled { color: #777777; }
+QAbstractItemView { selection-background-color: palette(highlight); selection-color: palette(highlighted-text); }
+QProgressBar { border-radius: 4px; border: 1px solid #3d3d3d; background-color: #1c1c1c; }
+QProgressBar::chunk { border-radius: 3px; background-color: palette(highlight); }
+QToolTip { border-radius: 6px; border: 1px solid #3d3d3d; background-color: #111111; color: #e5e5e5; padding: 4px; }

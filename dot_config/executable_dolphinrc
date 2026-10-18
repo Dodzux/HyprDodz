@@ -10,7 +10,7 @@ PreviewSize=96
 ShowCopyMoveMenu=true
 
 [DetailsMode]
-IconSize=176
+IconSize=24
 
 [ExtractDialog]
 1920x1080 screen: Height=1080
@@ -25,12 +25,15 @@ DirHistory[$e]=$HOME/Downloads/,$HOME/Downloads/CascadiaCode/,$HOME/.local/share
 HiddenFilesShown=true
 
 [General]
-ShowSelectionToggle=false
+ShowSelectionToggle=true
 ShowSpaceInfo=false
-ShowZoomSlider=false
+ShowZoomSlider=true
 Version=202
 ViewPropsTimestamp=2023,4,26,16,58,48.324
 
+ShowStatusBar=1
+ShowFullPath=true
+ShowFullPathInTitlebar=true
 [Icons]
 Theme=Tela-circle-black-dark
 
@@ -48,7 +51,7 @@ Places Icons Static Size=48
 MenuBar=Disabled
 
 [MainWindow][Toolbar mainToolBar]
-IconSize=16
+IconSize=22
 ToolButtonStyle=IconOnly
 
 [PlacesPanel]
@@ -61,11 +64,10 @@ Plugins=appimagethumbnail,audiothumbnail,comicbookthumbnail,cursorthumbnail,djvu
 Location=Everywhere
 
 [Toolbar mainToolBar]
-IconSize=32
+IconSize=22
 ToolButtonStyle=IconOnly
 
 [UiSettings]
-ColorScheme=Tela-circle
 
 [ViewPropertiesDialog]
 1920x1080 screen: Window-Maximized=true

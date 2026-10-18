@@ -261,6 +261,35 @@ def render(template, path, tokens):
     write_atomic(path, new)
 
 
+def update_kde_palette(hex_color, config_home=None, data_home=None):
+    """Keep KDE's color scheme and per-user palette aligned with Qt/GTK."""
+    config_home = config_home or os.path.expanduser("~/.config")
+    data_home = data_home or os.path.expanduser("~/.local/share")
+    rgb = ",".join(str(int(hex_color[i:i + 2], 16)) for i in (0, 2, 4))
+    foreground = on_accent(hex_color)
+    fg = ",".join(str(int(foreground[i:i + 2], 16)) for i in (0, 2, 4))
+    values = {"Colors:" + section: {
+        "DecorationFocus": rgb, "DecorationHover": rgb, "ForegroundLink": rgb,
+    } for section in ("Button", "Complementary", "Header", "Header][Inactive", "Selection", "Tooltip", "View", "Window")}
+    values["Colors:Selection"].update(BackgroundNormal=rgb, BackgroundAlternate=rgb,
+                                      ForegroundNormal=fg, ForegroundActive=fg)
+    for path in (os.path.join(data_home, "color-schemes", "GraphiteDark.colors"),
+                 os.path.join(config_home, "kdeglobals")):
+        rewrite_ini(path, values)
+
+
+def update_ghostty(hex_color, config_file=None):
+    """Mirror Kitty's accent roles without changing neutral or semantic colors."""
+    path = config_file or os.path.expanduser("~/.config/ghostty/config")
+    foreground = on_accent(hex_color)
+    replacements = [(rf"^{key}[ \t]*=[ \t]*#[0-9a-fA-F]{{6}}[ \t]*$", f"{key} = #{value}")
+                    for key, value in (("cursor-color", hex_color), ("cursor-text", foreground),
+                                       ("selection-background", hex_color), ("selection-foreground", foreground))]
+    replacements += [(rf"^palette[ \t]*=[ \t]*{slot}=#[0-9a-fA-F]{{6}}[ \t]*$", f"palette = {slot}=#{value}")
+                     for slot, value in {"4": hex_color, "12": hex_color, **codex_palette(hex_color)}.items()]
+    rewrite(path, replacements)
+
+
 def update_qt_palette(hex_color, config_dir=None):
     """Keep all current Qt palette roles in sync for applications loading the theme."""
     config_dir = config_dir or os.path.expanduser("~/.config/qt6ct")
@@ -335,6 +364,7 @@ def apply_files(hex_color, token):
     rewrite("~/.config/qt6ct/qss/hyprblur-round.qss", [
         (r"#[0-9a-fA-F]{6};([ \t]*/\* accent \*/)", rf"#{hex_color};\g<1>"),
     ])
+    guarded('update_kde_palette', hex_color)
     guarded('update_qt_palette', hex_color)
     rewrite("~/.config/starship.toml", [
         (r'^accent[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent = "#{hex_color}"'),
@@ -350,6 +380,7 @@ def apply_files(hex_color, token):
         (r"^selection_background[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_background    #{hex_color}"),
         (r"^selection_foreground[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"selection_foreground    #{fg}"),
     ])
+    guarded('update_ghostty', hex_color)
     rewrite("~/.config/yazi/theme.toml", [
         (rf'^(.*\b{key} = ")#[0-9a-fA-F]{{6}}(".*#\s*accent: {key}\s*)$', rf"\g<1>#{hex_color}\g<2>")
         for key in ("fg", "bg")
@@ -484,6 +515,27 @@ def reload_opencode(hex_color, token):
             pass
 
 
+def reload_ghostty(hex_color, token):
+    # GTK exports this action on the session bus, including non-unique
+    # instances. Address existing connections only; never auto-start a window.
+    result = subprocess.run(['busctl', '--user', 'list', '--no-pager', '--no-legend'],
+                            capture_output=True, text=True, timeout=1)
+    result.check_returncode()
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) < 3 or fields[2] != 'ghostty' or not fields[0].startswith(':'):
+            continue
+        check_latest(token)
+        response = subprocess.run([
+            'gdbus', 'call', '--session', '--dest', fields[0],
+            '--object-path', '/com/mitchellh/ghostty', '--method',
+            'org.gtk.Actions.Activate', 'reload-config', '[]', '{}'],
+            capture_output=True, text=True, timeout=1)
+        if response.returncode and not any(message in response.stderr for message in
+                ('UnknownMethod', 'UnknownObject', 'NameHasNoOwner', 'ServiceUnknown')):
+            raise RuntimeError(response.stderr.strip())
+
+
 def reload_btop(hex_color, token):
     # Native config/theme reload; never signal a client before its handler exists.
     result = subprocess.run(
@@ -596,7 +648,7 @@ def apply(hex_color, token=None):
         'kitty': reload_kitty, 'border': update_border,
         'quickshell': update_quickshell, 'cursor': update_cursor,
         'rgb': update_rgb, 'neovim': update_neovim,
-        'opencode': reload_opencode, 'btop': reload_btop,
+        'opencode': reload_opencode, 'btop': reload_btop, 'ghostty': reload_ghostty,
     }
     results = {name: {'status': 'pending'} for name in actions}
     results['settings'] = {'status': 'error' if errors else 'ok', 'errors': errors}
