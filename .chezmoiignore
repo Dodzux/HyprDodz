@@ -3,6 +3,7 @@
 **/.git/**
 .gitignore
 .gitattributes
+.github/**
 
 # Documentation & repository assets
 README.md

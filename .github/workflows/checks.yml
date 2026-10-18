@@ -1,0 +1,32 @@
+name: Config checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: config-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Syntax, templates and regression tests
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 15
+    steps:
+      - name: Install validation tools
+        run: >-
+          pacman -Syu --noconfirm --needed
+          git python python-numpy python-pillow fish lua
+          qt6-declarative desktop-file-utils chezmoi
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate saved configs
+        run: python -B scripts/check-configs.py
