@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import qs.services
 import "../DesktopActions.js" as Actions
 
 // AppLauncher — replaces rofi -show drun
@@ -17,6 +18,7 @@ PanelWindow {
     visible: false
     property alias queryText: searchInput.text
     property var shortcutHints: ({})
+    readonly property bool calculatorMode: searchInput.text.trim().startsWith("=")
     readonly property bool actionMode: searchInput.text.trim().startsWith(">")
     function showLauncher() {
         searchInput.text = "";
@@ -77,8 +79,14 @@ PanelWindow {
     // interactively launched applications. Each app then gets its own cgroup, so it
     // can be inspected and stopped on its own:  systemctl --user list-units --type=scope
     function launchApp(app) {
+        if (app.disabled) return;
+        if (app.id === "action:calculator") { searchInput.text = "= "; searchInput.forceActiveFocus(); return; }
         if (app.desktopAction) {
-            if (app.id === "action:brightness")
+            if (["action:desktop", "action:health"].indexOf(app.id) >= 0) {
+                root.openDesktopSettings(app.id === "action:health" ? "health" : "layout");
+            } else if (app.id === "action:layout") DesktopState.beginEdit();
+            else if (app.id === "action:wallpaper-undo") Quickshell.execDetached(["python3", DesktopState.helper, "undo-wallpaper"]);
+            else if (app.id === "action:brightness")
                 root.brightnessController.setBrightness(parseInt(app.command[app.command.length - 1]));
             else Quickshell.execDetached(app.command);
             launcherWindow.visible = false;
@@ -112,15 +120,19 @@ PanelWindow {
     property var filteredApps: {
         var q = searchInput.text.toLowerCase().trim()
         var all = DesktopEntries.applications.values
+        if (calculatorMode) return Actions.calculatorRows(searchInput.text);
         if (actionMode) return Actions.rows(q);
         if (!q) return all
-        return all.filter(function(app) {
+        var shortcuts = Actions.rows(">").filter(function(row) {
+            return ["action:calculator", "action:health", "action:desktop"].indexOf(row.id) >= 0 && row.name.toLowerCase().includes(q);
+        });
+        return shortcuts.concat(all.filter(function(app) {
             return app.name.toLowerCase().includes(q)
                 || (app.genericName && app.genericName.toLowerCase().includes(q))
                 || (app.comment && app.comment.toLowerCase().includes(q))
                 || (app.id && app.id.toLowerCase().includes(q))
                 || (app.keywords && app.keywords.join(" ").toLowerCase().includes(q))
-        })
+        }))
     }
 
     // ▓▒░ CENTERED PANEL CARD
@@ -134,18 +146,18 @@ PanelWindow {
         anchors.verticalCenterOffset: -60
 
         color: Theme.glassBg
-        radius: 14
+        radius: Theme.panelRadius
         antialiasing: true
         border.color: Theme.glassBorder
         border.width: 1
 
         // Slide-down open animation
         opacity: launcherWindow.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
         transform: Translate {
             y: launcherWindow.visible ? 0 : -16
-            Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         }
 
         // Block background click propagation
@@ -181,7 +193,7 @@ PanelWindow {
                     // so we layer a Text behind it
                     Text {
                         anchors.fill: parent
-                        text: "Search apps, or > for quick actions"
+                        text: "Search apps · = calculate · > quick actions"
                         color: Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 14
@@ -370,7 +382,7 @@ PanelWindow {
                         Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                         font.family: Theme.fontMain
                         font.pixelSize: 12
-                        visible: appRow.modelData.runInTerminal
+                        visible: !!appRow.modelData.runInTerminal
                     }
                 }
 

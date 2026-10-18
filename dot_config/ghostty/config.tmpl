@@ -19,11 +19,14 @@ font-size = 12.5
 
 foreground = #e5e5e5
 background = #111111
-selection-foreground = #111111
-selection-background = #e5e5e5
+# Transparency plus an explicit GTK blur request (GTK 4.24+).
+background-opacity = 0.85
+gtk-custom-css = blur.css
+selection-foreground = #{{ template "accent_fg" . }}
+selection-background = #{{ template "accent" . }}
 
-cursor-color = #e5e5e5
-cursor-text = #111111
+cursor-color = #{{ template "accent" . }}
+cursor-text = #{{ template "accent_fg" . }}
 cursor-style = bar
 cursor-style-blink = true
 
@@ -46,8 +49,8 @@ palette = 3=#dfaf87
 palette = 11=#dfaf87
 
 # Blue (Muted)
-palette = 4=#87afaf
-palette = 12=#87afaf
+palette = 4=#{{ template "accent" . }}
+palette = 12=#{{ template "accent" . }}
 
 # Magenta (Muted)
 palette = 5=#af87af
@@ -56,6 +59,18 @@ palette = 13=#af87af
 # Cyan (Muted)
 palette = 6=#87afd7
 palette = 14=#87afd7
+
+
+# Same desktop-derived extended colors as Kitty.
+{{- $accent := includeTemplate "accent" . -}}
+{{- $script := joinPath .chezmoi.sourceDir "dot_config/hypr/scripts/executable_sync_border.py" -}}
+{{- $palette := (output "python3" "-B" "-c" "import json,runpy,sys; print(json.dumps(runpy.run_path(sys.argv[1])['codex_palette'](sys.argv[2])))" $script $accent) | fromJson }}
+palette = 16=#{{ index $palette "16" }}
+palette = 17=#{{ index $palette "17" }}
+palette = 18=#{{ index $palette "18" }}
+palette = 19=#{{ index $palette "19" }}
+palette = 20=#{{ index $palette "20" }}
+palette = 21=#{{ index $palette "21" }}
 
 # White (Platinum)
 palette = 7=#e5e5e5
@@ -86,6 +101,8 @@ shell-integration-features = cursor,sudo,title
 
 mouse-hide-while-typing = true
 confirm-close-surface = true
+# Wallpaper syncing reloads colors quietly; keep clipboard toasts.
+app-notifications = no-config-reload
 quit-after-last-window-closed = true
 clipboard-read = allow
 clipboard-write = allow
@@ -95,10 +112,9 @@ scrollback-limit = 10000000
 # Shaders & Effects
 # -----------------------------------------------------------------------------
 
-# Disabled: the two-shader chain allocates full-resolution offscreen render
-# targets per surface, and `always` kept them animating even when unfocused.
-# custom-shader = shaders/cursor_lightning.glsl
-# custom-shader = shaders/cursor_warp.glsl
-# custom-shader-animation = always
+# Animate the existing cursor effects only while the terminal is focused.
+custom-shader = shaders/cursor_lightning.glsl
+custom-shader = shaders/cursor_warp.glsl
+custom-shader-animation = true
 
 

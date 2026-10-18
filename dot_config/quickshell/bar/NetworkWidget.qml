@@ -13,6 +13,8 @@ BarItem {
     id: widget
 
     required property var parentWindow
+    property bool compact: false
+    readonly property bool detailsVisible: !compact || detailsShown
 
     // Above background chatter (DNS, NTP, keepalives) before an arrow lights up.
     readonly property real activityKiB: 8
@@ -43,8 +45,8 @@ BarItem {
         root.toggleNetwork(parentWindow.screen, parentWindow.margins.left + r.x + r.width / 2);
     }
 
+    panelTargetWidth: networkIcon.implicitWidth + 16 + ((!compact || detailsRequested || detailsShown) && NetworkService.type !== "none" ? speeds.implicitWidth + 8 : 0)
     width: contentRow.implicitWidth + 16
-    HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
 
     Keys.onReturnPressed: toggle()
     Keys.onSpacePressed: toggle()
@@ -52,9 +54,10 @@ BarItem {
     Row {
         id: contentRow
         anchors.centerIn: parent
-        spacing: 8
+        spacing: speeds.width > 0 ? 8 : 0
 
         Text {
+            id: networkIcon
             anchors.verticalCenter: parent.verticalCenter
             text: widget.icon()
             color: NetworkService.type === "none" ? Theme.subtext0 : Theme.text
@@ -64,9 +67,15 @@ BarItem {
 
         // Speeds only while connected — nothing to measure otherwise.
         Row {
+            id: speeds
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
             visible: NetworkService.type !== "none"
+            width: widget.detailsVisible ? implicitWidth : 0
+            opacity: widget.detailsVisible ? 1 : 0
+            clip: true
+            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
 
             Repeater {
                 model: [

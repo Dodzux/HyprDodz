@@ -44,8 +44,8 @@ sync_accepted() {
 }
 apply_wallpaper() {
     local current monitors outputs fps
+    current=$(timeout -k 1s 2s awww query 2>/dev/null | sed -n 's/.*currently displaying: image: //p' | head -1)
     if [[ -z "$image" ]]; then
-        current=$(timeout -k 1s 2s awww query 2>/dev/null | sed -n 's/.*currently displaying: image: //p' | head -1)
         # Choose when applying, so a rapid request cannot choose the image
         # that the preceding transition has just installed.
         IFS= read -r -d '' image < <(find "$wallpaper_dir" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' \) ! -path "${current:-/none}" -print0 2>/dev/null | shuf -z -n 1) || :
@@ -62,6 +62,7 @@ apply_wallpaper() {
     python3 "$script_dir/sync_border.py" --warm-cache "$image" >> "$log_dir/accent-sync.log" 2>&1 8>&- 9>&- &
     if timeout -k 1s 15s awww img "$image" --outputs "$outputs" --transition-type random --transition-fps "$fps" --transition-duration 0.75 --transition-step 90 >> "$log_dir/accent-sync.log" 2>&1; then
         accepted="$image"
+        python3 "$HOME/.config/quickshell/scripts/desktop_extras.py" record-wallpaper --path "$image" --previous "${current:-}" >> "$log_dir/accent-sync.log" 2>&1
         # Keep normal accent/RGB updates immediate, alongside the transition.
         flock 8
         if is_current; then

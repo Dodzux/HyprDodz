@@ -4,7 +4,8 @@ import qs
 BarItem {
     id: brightnessWidget
     readonly property var controller: root.brightnessController
-    readonly property bool expanded: hovered || activeFocus
+    readonly property bool expanded: detailsShown
+    panelTargetWidth: brightnessIcon.implicitWidth + 16 + ((detailsRequested || detailsShown) ? brightnessText.implicitWidth + 4 : 0)
     width: contentRow.implicitWidth + 16
 
     onHoveredChanged: { if (hovered) controller.refreshBrightness(false); }
@@ -18,8 +19,9 @@ BarItem {
         id: contentRow
         anchors.centerIn: parent
         spacing: brightnessWidget.expanded ? 4 : 0
-        Behavior on spacing { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+        Behavior on spacing { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         Text {
+            id: brightnessIcon
             anchors.verticalCenter: parent.verticalCenter
             text: "󰃠"
             color: Theme.accent
@@ -28,6 +30,7 @@ BarItem {
             renderType: Text.NativeRendering
         }
         Text {
+            id: brightnessText
             anchors.verticalCenter: parent.verticalCenter
             text: brightnessWidget.controller.brightnessPct + "%"
             color: Theme.text
@@ -38,8 +41,8 @@ BarItem {
             clip: true
             width: brightnessWidget.expanded ? implicitWidth : 0
             opacity: brightnessWidget.expanded ? 1 : 0
-            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 140 } }
         }
     }
     MouseArea {

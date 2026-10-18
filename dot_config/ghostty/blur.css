@@ -1,0 +1,2 @@
+/* GTK 4.24 defaults to no blur; request it only for Ghostty. */
+window { backdrop-filter: blur(20px); }

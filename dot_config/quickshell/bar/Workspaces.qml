@@ -5,11 +5,13 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import qs
+import qs.services
 
 Row {
     id: workspaces
     // No Row spacing: each slot carries its own 6px gap inside its animated
     // width, so a slot sliding in or out never makes the spacing jump.
+    WorkspaceMenu { id: workspaceMenu }
     spacing: 0
     property var peekClients: []
     property int requestedPeek: 0
@@ -110,9 +112,9 @@ Row {
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: isFocused ? 36 : 28
+                width: isFocused ? Math.max(38, wsLabel.implicitWidth + 18) : 16
                 height: 28
-                radius: 6
+                radius: Theme.widgetRadius
                 antialiasing: true
                 scale: 0.6 + 0.4 * slot.reveal
 
@@ -167,7 +169,7 @@ Row {
                     if (isFocused) return Theme.bgSelection;
                     // Hover / keyboard focus: the bar's quiet glass lift (see BarItem)
                 if (wsHover.hovered || wsRect.activeFocus) return Qt.rgba(1, 1, 1, 0.08);
-                    if (isOccupied) return Theme.activeGlow;
+                    if (isOccupied) return "transparent";
                     return "transparent";
                 }
                 border.color: isFocused || wsRect.activeFocus ? Theme.accent
@@ -184,9 +186,18 @@ Row {
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on border.color { ColorAnimation { duration: 120 } }
 
-                Text {
+                Rectangle {
                     anchors.centerIn: parent
-                    text: wsRect.wsId.toString()
+                    width: 5; height: 5; radius: 2.5
+                    visible: !wsRect.isFocused
+                    color: wsRect.isOccupied ? Theme.accent : Theme.borderMuted
+                    Behavior on color { ColorAnimation { duration: Theme.motionFast } }
+                }
+                Text {
+                    id: wsLabel
+                    anchors.centerIn: parent
+                    visible: wsRect.isFocused
+                    text: DesktopState.labels[String(wsRect.wsId)] || wsRect.wsId.toString()
                     color: (wsRect.isFocused || wsHover.hovered || wsRect.isOccupied) ? Theme.text : Theme.subtext0
 
                     font.family: Theme.fontMain
@@ -198,7 +209,16 @@ Row {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: workspaces.goTo(wsRect.wsId)
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: event => {
+                        if (event.button === Qt.RightButton) {
+                            workspaces.requestedPeek = 0; workspaces.activePeek = 0;
+                            openPeek.stop(); closePeek.stop();
+                            workspaceMenu.anchor.item = wsRect;
+                            workspaceMenu.workspaceId = wsRect.wsId;
+                            workspaceMenu.open();
+                        } else workspaces.goTo(wsRect.wsId);
+                    }
                     // Same direction as SUPER+scroll in keybindings.lua. This used
                     // to exec `hyprctl dispatch workspace e-1` — hyprlang syntax,
                     // which the Lua config rejects ("')' expected near 'e'").

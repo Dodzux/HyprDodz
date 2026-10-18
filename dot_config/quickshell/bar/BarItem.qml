@@ -31,6 +31,20 @@ Rectangle {
     // taskbar): neutral glow, under hover/focus/press.
     property bool selected: false
 
+    // Reserve the panel's final width before revealing hover details.
+    // The delay runs once per hover, never once per animation frame.
+    property real panelTargetWidth: width
+    readonly property bool detailsRequested: enabled && (hovered || activeFocus)
+    property bool detailsShown: false
+    property bool holdDetails: false
+    onHoldDetailsChanged: if (!holdDetails && !detailsRequested) detailsShown = false
+    onDetailsRequestedChanged: {
+        if (detailsRequested) detailsDelay.restart();
+        else { detailsDelay.stop(); if (!holdDetails) detailsShown = false; }
+    }
+    Timer { id: detailsDelay; interval: 110; onTriggered: item.detailsShown = item.detailsRequested }
+
+
     // White with a given alpha. The resting state is alpha 0 of the same
     // white, so the fade never passes through a darker colour.
     function glass(a) { return Qt.rgba(1, 1, 1, a); }
@@ -58,6 +72,7 @@ Rectangle {
 
     HoverHandler {
         id: hoverHandler
+        blocking: false
         cursorShape: Qt.PointingHandCursor
     }
 

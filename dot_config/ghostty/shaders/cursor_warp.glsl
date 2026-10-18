@@ -71,10 +71,10 @@ vec2 getRectangleCenter(vec4 rectangle) {
     return vec2(rectangle.x + (rectangle.z / 2.), rectangle.y - (rectangle.w / 2.));
 }
 
-const vec4 TRAIL_COLOR = vec4(0.92, 0.94, 0.98, 0.60);        // Frosted white glaze body
+#define TRAIL_COLOR vec4(iCurrentCursorColor.rgb, 0.60)
 const vec4 CURRENT_CURSOR_COLOR = vec4(1.0, 1.0, 1.0, 1.0);
 const vec4 PREVIOUS_CURSOR_COLOR = vec4(1.0, 1.0, 1.0, 1.0);
-const vec4 TRAIL_COLOR_ACCENT = vec4(1.0, 1.0, 1.0, 0.90);    // Crisp white glazed edge
+#define TRAIL_COLOR_ACCENT vec4(iCurrentCursorColor.rgb, 0.90)
 const float DURATION = .4;
 const float OPACITY = .6;
 // Don't draw trail within that distance * cursor size.
@@ -89,6 +89,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     #if !defined(WEB)
     fragColor = texture(iChannel0, fragCoord.xy / iResolution.xy);
     #endif
+    if (iTime - iTimeCursorChange >= DURATION) return; // Idle: no trail calculations.
+    float sourceAlpha = fragColor.a;
     //Normalization for fragCoord to a space of -1 to 1;
     vec2 vu = normalize(fragCoord, 1.);
     vec2 offsetFactor = vec2(-.5, 0.5);
@@ -125,7 +127,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     bool isOnSeparateLine = HIDE_TRAILS_ON_THE_SAME_LINE ? currentCursor.y != previousCursor.y : true;
     if (isFarEnough && isOnSeparateLine) {
         float distanceToEnd = distance(vu.xy, centerCC);
-        float alphaModifier = distanceToEnd / (lineLength * (easedProgress));
+        float alphaModifier = distanceToEnd / max(lineLength * easedProgress, 0.000001);
 
         if (alphaModifier > 1.0) { // this change fixed it for me.
             alphaModifier = 1.0;
@@ -138,5 +140,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         newColor = mix(newColor, TRAIL_COLOR, antialising(sdfTrail));
         newColor = mix(fragColor, newColor, (1.0 - alphaModifier) * TRAIL_COLOR.a);
         fragColor = mix(newColor, fragColor, step(sdfCursor, 0));
+        fragColor.a = sourceAlpha; // Preserve native transparency for compositor blur.
     }
 }

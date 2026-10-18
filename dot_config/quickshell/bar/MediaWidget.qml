@@ -5,7 +5,8 @@ import qs
 BarItem {
     id: mediaWidget
 
-    width: visible ? Math.min(300, contentRow.implicitWidth + 20) : 0
+    property real maximumWidth: 300
+    width: visible ? Math.min(maximumWidth, contentRow.implicitWidth + 20) : 0
     
     HoverHandler { id: mediaHover }
     
@@ -43,7 +44,7 @@ BarItem {
         id: contentRow
         anchors.centerIn: parent
         spacing: 6
-        width: Math.min(mediaWidget.width - 20, implicitWidth)
+        width: Math.max(0, Math.min(mediaWidget.width - 20, implicitWidth))
         clip: true
 
         Text {
@@ -62,7 +63,7 @@ BarItem {
             font.pixelSize: 11
             font.weight: Font.Bold
             elide: Text.ElideRight
-            width: mediaWidget.visible ? Math.min(250, implicitWidth) : 0
+            width: mediaWidget.visible ? Math.max(0, Math.min(250, mediaWidget.maximumWidth - 40, implicitWidth)) : 0
             renderType: Text.NativeRendering
         }
     }

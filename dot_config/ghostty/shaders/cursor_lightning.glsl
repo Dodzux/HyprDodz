@@ -2,8 +2,8 @@
 // Draws a brief, jagged bolt from the previous cursor position to the current one.
 
 // -- CONFIGURATION --
-const vec3 BOLT_COLOR = vec3(1.00, 1.00, 1.00);
-const vec3 GLOW_COLOR = vec3(0.85, 0.85, 0.90);
+#define BOLT_COLOR iCurrentCursorColor.rgb
+#define GLOW_COLOR (iCurrentCursorColor.rgb * 0.85)
 const float DURATION = 0.14;              // lifetime of each zap, in seconds
 const float THRESHOLD_MIN_DISTANCE = 1.5; // cursor widths before a zap is drawn
 const float JAGGEDNESS = 0.085;           // sideways displacement relative to bolt length

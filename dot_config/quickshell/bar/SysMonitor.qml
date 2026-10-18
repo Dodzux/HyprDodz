@@ -7,37 +7,37 @@ import qs.services
 BarItem {
     id: sysMonitorWidget
 
+    panelTargetWidth: cpuIcon.implicitWidth + 20 + ((detailsRequested || detailsShown) ? cpuText.implicitWidth + memIcon.implicitWidth + memText.implicitWidth + 18 : 0)
     width: contentLayout.implicitWidth + 20
     
-    HoverHandler { id: sysMonitorHover }
-    property bool isHoveredOrFocused: sysMonitorHover.hovered || sysMonitorWidget.activeFocus
+    readonly property bool isHoveredOrFocused: detailsShown
 
     
 
 
     property bool showMemGb: true
 
-    TapHandler {
-        onTapped: {
-            // Own scope, not quickshell.service's cgroup — see panels/AppLauncher.qml.
-            Quickshell.execDetached([
-                "systemd-run", "--user", "--scope", "--quiet", "--collect",
-                "--slice=app.slice", "--description=btop",
-                "kitty", "-e", "btop"
-            ])
-        }
+    function openMonitor() {
+        Quickshell.execDetached([
+            "systemd-run", "--user", "--scope", "--quiet", "--collect",
+            "--slice=app.slice", "--description=btop", "kitty", "-e", "btop"
+        ]);
     }
+    Keys.onReturnPressed: openMonitor()
+    Keys.onSpacePressed: openMonitor()
+    TapHandler { onTapped: sysMonitorWidget.openMonitor() }
 
     Row {
         id: contentLayout
         anchors.centerIn: parent
-        spacing: 10
+        spacing: sysMonitorWidget.isHoveredOrFocused ? 10 : 0
 
         // CPU Section
         Row {
-            spacing: 4
+            spacing: sysMonitorWidget.isHoveredOrFocused ? 4 : 0
 
             Text {
+                id: cpuIcon
                 text: ""
                 anchors.verticalCenter: parent.verticalCenter
                 color: SysMonitorService.cpuUsage >= 85 ? Theme.error : Theme.subtext0
@@ -48,6 +48,11 @@ BarItem {
             }
             Text {
                 id: cpuText
+                width: sysMonitorWidget.isHoveredOrFocused ? implicitWidth : 0
+                opacity: sysMonitorWidget.isHoveredOrFocused ? 1 : 0
+                clip: true
+                Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
                 anchors.verticalCenter: parent.verticalCenter
                 text: SysMonitorService.cpuUsage.toString().padStart(2, '0') + "%"
                 color: SysMonitorService.cpuUsage >= 85 ? Theme.error : Theme.text
@@ -61,9 +66,15 @@ BarItem {
 
         // Memory Section
         Row {
+            width: sysMonitorWidget.isHoveredOrFocused ? implicitWidth : 0
+            opacity: sysMonitorWidget.isHoveredOrFocused ? 1 : 0
+            clip: true
+            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
             spacing: 4
 
             Text {
+                id: memIcon
                 text: "󰘚"
                 anchors.verticalCenter: parent.verticalCenter
                 color: SysMonitorService.memUsage >= 85 ? Theme.error : Theme.subtext0

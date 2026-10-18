@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import qs.services
 
 PanelWindow {
     id: wallpaperWindow
@@ -24,13 +25,46 @@ PanelWindow {
     color: "transparent"
     
 
+    property bool favoritesOnly: false
+    property string historyMessage: ""
+    property string previousWallpaper: ""
+    Process {
+        id: historyProc
+        command: ["python3", DesktopState.helper, "wallpaper-state"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try { wallpaperWindow.previousWallpaper = JSON.parse(text).previous || ""; }
+                catch (e) { wallpaperWindow.previousWallpaper = ""; }
+            }
+        }
+    }
+    Process {
+        id: undoProc
+        command: ["python3", DesktopState.helper, "undo-wallpaper"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    var data = JSON.parse(text);
+                    wallpaperWindow.historyMessage = data.message || "";
+                    if (data.ok) wallpaperWindow.visible = false;
+                } catch (e) { wallpaperWindow.historyMessage = "Could not restore wallpaper"; }
+            }
+        }
+    }
     property var wallpapers: []
     property var filteredWallpapers: {
         var q = searchInput.text.toLowerCase().trim()
-        if (!q) return wallpapers
         return wallpapers.filter(function(item) {
-            return item.name.toLowerCase().includes(q)
-        })
+            return (!wallpaperWindow.favoritesOnly || DesktopState.favorites.indexOf(item.path) >= 0)
+                && (!q || item.name.toLowerCase().includes(q));
+        }).sort(function(a, b) {
+            // Numbered variants belong under the wallpaper name (Rain World → R).
+            var nameA = a.name.toLowerCase().replace(/^\d+[\s._-]+/, "");
+            var nameB = b.name.toLowerCase().replace(/^\d+[\s._-]+/, "");
+            return nameA.localeCompare(nameB)
+                || a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+                || a.path.localeCompare(b.path);
+        });
     }
 
     Process {
@@ -64,11 +98,11 @@ PanelWindow {
         border.width: 1
 
         opacity: wallpaperWindow.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
         transform: Translate {
             y: wallpaperWindow.visible ? 0 : 16
-            Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         }
 
         MouseArea { 
@@ -88,10 +122,23 @@ PanelWindow {
                 anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                 spacing: 10
 
+                DesktopButton {
+                    label: wallpaperWindow.favoritesOnly ? "Bookmarks" : "All"
+                    chosen: wallpaperWindow.favoritesOnly
+                    onClicked: wallpaperWindow.favoritesOnly = !wallpaperWindow.favoritesOnly
+                }
+                DesktopButton {
+                    label: "↶ Undo"
+                    enabled: wallpaperWindow.previousWallpaper !== "" && !undoProc.running
+                    onClicked: undoProc.running = true
+                }
                 TextInput {
                     id: searchInput
                     Layout.fillWidth: true
                     color: Theme.text
+                    selectByMouse: true
+                    selectionColor: Theme.accent
+                    selectedTextColor: Theme.onAccent
                     font.family: Theme.fontMain
                     font.pixelSize: 14
                     focus: wallpaperWindow.visible
@@ -195,6 +242,11 @@ PanelWindow {
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                     
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { gridList.currentIndex = wallpaperTile.index; wallpaperWindow.choose(wallpaperTile.modelData); }
+                    }
                     ColumnLayout {
                         anchors.fill: parent
                         spacing: 0
@@ -250,19 +302,22 @@ PanelWindow {
                     }
 
                     HoverHandler { id: itemHover }
-                    TapHandler {
-                        onTapped: {
-                            gridList.currentIndex = index
-                            wallpaperWindow.choose(modelData)
-                            wallpaperWindow.visible = false
-                        }
-                    }
+
+                }
+                Rectangle {
+                    anchors { top: parent.top; right: parent.right; margins: 12 }
+                    width: 28; height: 26
+                    radius: Theme.widgetRadius
+                    color: Theme.bgContainer
+                    border.color: Theme.glassBorder
+                    Text { anchors.centerIn: parent; text: DesktopState.favorites.indexOf(wallpaperTile.modelData.path) >= 0 ? "\uf02e" : "\uf097"; color: Theme.accent; font.family: Theme.fontMain; font.pixelSize: 16 }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: DesktopState.favorite(wallpaperTile.modelData.path) }
                 }
             }
             
             Text {
                 anchors.centerIn: parent
-                text: searchInput.text.length > 0 ? "No wallpapers match your search" : "No wallpapers found"
+                text: wallpaperWindow.historyMessage || (wallpaperWindow.favoritesOnly ? "No bookmarks match · save a wallpaper from All" : searchInput.text.length > 0 ? "No wallpapers match your search" : "No wallpapers found")
                 color: Theme.subtext0
                 font.family: Theme.fontMain
                 font.pixelSize: 13
@@ -282,6 +337,8 @@ PanelWindow {
             wallpaperWindow.screen = scr;
         }
         searchInput.text = "";
+        historyMessage = "";
+        if (!historyProc.running) historyProc.running = true;
         if (wallpaperWindow.wallpapers.length === 0 && !findProc.running) {
             findProc.running = true;
         }

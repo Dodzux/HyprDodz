@@ -11,10 +11,10 @@ BarItem {
     readonly property bool isMuted: source ? source.muted : true
     readonly property int volumePct: source ? Math.round(source.volume * 100) : 0
 
+    panelTargetWidth: micIcon.implicitWidth + 16 + ((detailsRequested || detailsShown) ? micText.implicitWidth + 4 : 0)
     width: contentRow.implicitWidth + 16
     
-    HoverHandler { id: micHover }
-    property bool isHoveredOrFocused: micHover.hovered || micWidget.activeFocus
+    property bool isHoveredOrFocused: detailsShown
     
 
     function toggleMute() {
@@ -31,7 +31,7 @@ BarItem {
         anchors.centerIn: parent
         spacing: isHoveredOrFocused ? 4 : 0
 
-        Behavior on spacing { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+        Behavior on spacing { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
         Text {
             id: micIcon
@@ -58,8 +58,8 @@ BarItem {
             width: isHoveredOrFocused ? implicitWidth : 0
             opacity: isHoveredOrFocused ? 1.0 : 0.0
 
-            Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 140 } }
 
             text: {
                 if (!source) return "00%"
