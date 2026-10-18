@@ -26,9 +26,32 @@ My CachyOS desktop · Hyprland + Quickshell · Managed with chezmoi
 | :---: | :---: |
 | [![App launcher](assets/screenshots/launcher.png)](assets/screenshots/launcher.png) | [![Desktop controls](assets/screenshots/controls.png)](assets/screenshots/controls.png) |
 
-[▶ Watch the desktop tour — MP4, 60 FPS](assets/videos/demo.mp4)
+<details>
+<summary>▶ Watch the desktop tour — MP4</summary>
 
-Apps, calculator, wallpapers, bar controls, capture tools, tiling and workspaces. Feature labels and chapters are included in the video.
+**1. Apps, calculator and copying**
+
+https://github.com/user-attachments/assets/a80fdc1d-9d8c-4504-acc5-2d6c21937c2c
+
+**2. Shortcuts and quick actions**
+
+https://github.com/user-attachments/assets/859b9aa8-272f-40f2-9562-ba79e64bc4de
+
+**3. Wallpapers, bookmarks and bar layout**
+
+https://github.com/user-attachments/assets/303a4f43-4a00-4929-8d85-e0465b6c4706
+
+**4. Desktop controls and workspaces**
+
+https://github.com/user-attachments/assets/62f6bfa3-95f4-422d-8ef8-14ee023edc16
+
+**5. Panels and session controls**
+
+https://github.com/user-attachments/assets/68bba725-4e9b-4289-81c9-134288bdba7f
+
+[Download the MP4 chapters](assets/videos/)
+
+</details>
 
 ---
 
