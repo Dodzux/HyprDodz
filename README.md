@@ -1,57 +1,8 @@
-<div align="center">
+# HyprDodz — CachyOS Hyprland Dotfiles
 
-# HyprDodz
-
-My CachyOS desktop · Hyprland + Quickshell · Managed with chezmoi
-
-[![Config checks](https://github.com/Dodzux/HyprDodz/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/Dodzux/HyprDodz/actions/workflows/checks.yml)
-![CachyOS](https://img.shields.io/badge/CachyOS-1793D1?style=flat-square&logo=archlinux&logoColor=white)
-![Hyprland](https://img.shields.io/badge/Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=151515)
-![chezmoi](https://img.shields.io/badge/chezmoi-4169E1?style=flat-square&logo=chezmoi&logoColor=white)
-
-[Setup](#quick-start--reproduction) · [Hardware](#hardware--portability) · [Keybindings](#keybinding-highlights) · [Maintenance](#dotfiles-management-cheatsheet)
-
-</div>
+> My Hyprland desktop on an ASUS ROG Strix G16: modular Lua configs, a custom Quickshell UI, and wallpaper colors shared across the desktop. Managed with chezmoi.
 
 ![HyprDodz desktop](assets/screenshots/preview.png)
-
-## What makes it mine
-
-- Wallpaper colors shared across apps, the cursor and RGB lighting.
-- A custom Quickshell bar, launcher, calculator and workspace overview.
-- Rearrangeable bar controls with brightness, battery and desktop settings.
-- Hardware profiles for my ASUS ROG Strix G16 and Logitech G305.
-
-| App launcher | Desktop controls |
-| :---: | :---: |
-| [![App launcher](assets/screenshots/launcher.png)](assets/screenshots/launcher.png) | [![Desktop controls](assets/screenshots/controls.png)](assets/screenshots/controls.png) |
-
-<details>
-<summary>▶ Watch the desktop tour — MP4</summary>
-
-**1. Apps, calculator and copying**
-
-https://github.com/user-attachments/assets/a80fdc1d-9d8c-4504-acc5-2d6c21937c2c
-
-**2. Shortcuts and quick actions**
-
-https://github.com/user-attachments/assets/859b9aa8-272f-40f2-9562-ba79e64bc4de
-
-**3. Wallpapers, bookmarks and bar layout**
-
-https://github.com/user-attachments/assets/303a4f43-4a00-4929-8d85-e0465b6c4706
-
-**4. Desktop controls and workspaces**
-
-https://github.com/user-attachments/assets/62f6bfa3-95f4-422d-8ef8-14ee023edc16
-
-**5. Panels and session controls**
-
-https://github.com/user-attachments/assets/68bba725-4e9b-4289-81c9-134288bdba7f
-
-[Download the MP4 chapters](assets/videos/)
-
-</details>
 
 ---
 
@@ -286,8 +237,7 @@ git push
 | `scripts/` | Full bootstrap, showcase capture, audits and snapshot helpers |
 | `system/` | Greeter and supplemental settings |
 | `docs/reports/` | Detailed restore and verification records |
-| `assets/` | Screenshots and desktop tour |
-| `.github/workflows/` | Automatic config checks |
+| `assets/screenshots/` | Desktop preview |
 
 All existing app configs are kept, including OBS, Micro, Inkscape, Discord, Obsidian, OpenRGB, Qt/KDE tools and Git. Most repository files are bundled icons and themes; desktop customization starts in `dot_config/hypr/` and `dot_config/quickshell/`.
 
@@ -302,18 +252,6 @@ python3 scripts/audit-configs.py --report docs/reports/config-coverage.md
 ## Updating the Showcase Screenshot
 
 Close all windows and press `SUPER + Print`. [scripts/showcase.sh](scripts/showcase.sh) captures the desktop preview, commits it and pushes it using your GitHub authentication.
-
-### Config checks
-
-Pushes to `main` and `master`, and pull requests, run syntax checks, template rendering and regression tests. Run the same checks locally with:
-
-```bash
-python3 scripts/check-configs.py
-```
-
-Requires Python (NumPy and Pillow), Bash, Fish, Lua, Qt's `qmllint`, `desktop-file-validate` and chezmoi. Checks use temporary data and mocked hardware; they do not apply configs. QML type-analysis warnings are reported separately from syntax errors.
-
-[Tagged snapshots](https://github.com/Dodzux/HyprDodz/releases) keep a fixed version available for recovery.
 
 ---
 
