@@ -45,7 +45,7 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "blur-quickshell-panels",
-    match = { namespace = "^(quickshell-launcher|quickshell-clipboard|quickshell-screenshot|notification-osd|quickshell-wallpaper-selector|quickshell-shortcuts|quickshell-notifications|quickshell-osd|quickshell-overview|quickshell-network|quickshell-desktop-settings|quickshell-reload-toast)$" },
+    match = { namespace = "^(quickshell-launcher|quickshell-clipboard|quickshell-screenshot|notification-osd|quickshell-wallpaper-selector|quickshell-shortcuts|quickshell-notifications|quickshell-osd|quickshell-overview|quickshell-network|quickshell-reload-toast)$" },
     blur  = true,
     blur_popups = true,
     ignore_alpha = 0.2,
@@ -129,3 +129,11 @@ hl.window_rule({
     dim_around   = true,
 })
 
+-- Compact utility windows, matching the Super+U updater.
+hl.window_rule({
+    name   = "audio-bluetooth-floating",
+    match  = { class = "^(org\\.pulseaudio\\.pavucontrol|pavucontrol|blueman-manager|org\\.blueman\\.Manager)$" },
+    float  = true,
+    center = true,
+    size   = { 1000, 640 },
+})

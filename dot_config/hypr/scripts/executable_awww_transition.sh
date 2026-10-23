@@ -62,7 +62,6 @@ apply_wallpaper() {
     python3 "$script_dir/sync_border.py" --warm-cache "$image" >> "$log_dir/accent-sync.log" 2>&1 8>&- 9>&- &
     if timeout -k 1s 15s awww img "$image" --outputs "$outputs" --transition-type random --transition-fps "$fps" --transition-duration 0.75 --transition-step 90 >> "$log_dir/accent-sync.log" 2>&1; then
         accepted="$image"
-        python3 "$HOME/.config/quickshell/scripts/desktop_extras.py" record-wallpaper --path "$image" --previous "${current:-}" >> "$log_dir/accent-sync.log" 2>&1
         # Keep normal accent/RGB updates immediate, alongside the transition.
         flock 8
         if is_current; then

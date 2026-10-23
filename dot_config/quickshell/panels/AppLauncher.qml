@@ -7,7 +7,6 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
 import qs.services
-import "../DesktopActions.js" as Actions
 
 // AppLauncher — replaces rofi -show drun
 // Triggered by: SUPER+A (global shortcut)
@@ -18,8 +17,6 @@ PanelWindow {
     visible: false
     property alias queryText: searchInput.text
     property var shortcutHints: ({})
-    readonly property bool calculatorMode: searchInput.text.trim().startsWith("=")
-    readonly property bool actionMode: searchInput.text.trim().startsWith(">")
     function showLauncher() {
         searchInput.text = "";
         visible = true;
@@ -79,19 +76,6 @@ PanelWindow {
     // interactively launched applications. Each app then gets its own cgroup, so it
     // can be inspected and stopped on its own:  systemctl --user list-units --type=scope
     function launchApp(app) {
-        if (app.disabled) return;
-        if (app.id === "action:calculator") { searchInput.text = "= "; searchInput.forceActiveFocus(); return; }
-        if (app.desktopAction) {
-            if (["action:desktop", "action:health"].indexOf(app.id) >= 0) {
-                root.openDesktopSettings(app.id === "action:health" ? "health" : "layout");
-            } else if (app.id === "action:layout") DesktopState.beginEdit();
-            else if (app.id === "action:wallpaper-undo") Quickshell.execDetached(["python3", DesktopState.helper, "undo-wallpaper"]);
-            else if (app.id === "action:brightness")
-                root.brightnessController.setBrightness(parseInt(app.command[app.command.length - 1]));
-            else Quickshell.execDetached(app.command);
-            launcherWindow.visible = false;
-            return;
-        }
         var cmdList = [];
         if (app.command) {
             cmdList = app.command.filter(function(arg) {
@@ -120,19 +104,14 @@ PanelWindow {
     property var filteredApps: {
         var q = searchInput.text.toLowerCase().trim()
         var all = DesktopEntries.applications.values
-        if (calculatorMode) return Actions.calculatorRows(searchInput.text);
-        if (actionMode) return Actions.rows(q);
         if (!q) return all
-        var shortcuts = Actions.rows(">").filter(function(row) {
-            return ["action:calculator", "action:health", "action:desktop"].indexOf(row.id) >= 0 && row.name.toLowerCase().includes(q);
-        });
-        return shortcuts.concat(all.filter(function(app) {
+        return all.filter(function(app) {
             return app.name.toLowerCase().includes(q)
                 || (app.genericName && app.genericName.toLowerCase().includes(q))
                 || (app.comment && app.comment.toLowerCase().includes(q))
                 || (app.id && app.id.toLowerCase().includes(q))
                 || (app.keywords && app.keywords.join(" ").toLowerCase().includes(q))
-        }))
+        })
     }
 
     // ▓▒░ CENTERED PANEL CARD
@@ -193,7 +172,7 @@ PanelWindow {
                     // so we layer a Text behind it
                     Text {
                         anchors.fill: parent
-                        text: "Search apps · = calculate · > quick actions"
+                        text: "Search apps..."
                         color: Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 14
@@ -216,7 +195,7 @@ PanelWindow {
 
                 // Result count badge
                 Text {
-                    text: launcherWindow.filteredApps.length + (launcherWindow.actionMode ? " actions" : " apps")
+                    text: launcherWindow.filteredApps.length + " apps"
                     color: Theme.subtext0
                     font.family: Theme.fontMain
                     font.pixelSize: 11
@@ -329,6 +308,7 @@ PanelWindow {
                     // Name + description
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 2
 
                         Text {
@@ -361,6 +341,9 @@ PanelWindow {
                         visible: shortcut.length > 0
                         implicitWidth: hintText.implicitWidth + 14
                         implicitHeight: 24
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.minimumWidth: implicitWidth
+                        Layout.maximumWidth: implicitWidth
                         radius: 6
                         color: appRow.highlighted ? Theme.launcherSelectionBg : Theme.bgSelection
                         border.width: 1
@@ -375,15 +358,6 @@ PanelWindow {
                         }
                     }
 
-                    // Terminal indicator
-                    Text {
-                        text: ""
-                        color: appRow.highlighted ? Theme.accent : Theme.subtext0
-                        Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
-                        font.family: Theme.fontMain
-                        font.pixelSize: 12
-                        visible: !!appRow.modelData.runInTerminal
-                    }
                 }
 
                 HoverHandler {

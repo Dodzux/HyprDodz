@@ -43,15 +43,11 @@ PanelWindow {
         right: true
     }
 
-    function handleControlDrop(key, globalX, globalY) {
-        if (!controlsRow.acceptControlDrop(key, globalX, globalY))
-            statusRow.acceptControlDrop(key, globalX, globalY);
-    }
     readonly property var widgetRegistry: ({stats: statsComponent, network: networkComponent,
         bluetooth: bluetoothComponent, audio: audioComponent, mic: micComponent,
         brightness: brightnessComponent, battery: batteryComponent, language: languageComponent,
         notifications: notificationsComponent, shortcuts: shortcutsComponent, tray: trayComponent,
-        settings: settingsComponent, power: powerComponent})
+        power: powerComponent})
     Component { id: statsComponent; SysMonitor {} }
     Component { id: networkComponent; NetworkWidget { parentWindow: bar; compact: true } }
     Component { id: bluetoothComponent; BluetoothWidget { parentWindow: bar } }
@@ -64,19 +60,6 @@ PanelWindow {
     Component { id: shortcutsComponent; CheatsheetButton {} }
     Component { id: trayComponent; SystemTray { parentWindow: bar } }
     Component { id: powerComponent; PowerButton { parentWindow: bar } }
-    Component {
-        id: settingsComponent
-        BarItem {
-            width: 28
-            Accessible.name: "Desktop controls. Right click for Health"
-            Keys.onReturnPressed: root.openDesktopSettings("layout")
-            Keys.onSpacePressed: root.openDesktopSettings("layout")
-            Text { anchors.centerIn: parent; text: "󰒓"; color: Theme.subtext0; font.family: Theme.fontMain; font.pixelSize: Theme.iconSize }
-            TapHandler { acceptedButtons: Qt.LeftButton; onTapped: root.openDesktopSettings("layout") }
-            TapHandler { acceptedButtons: Qt.RightButton; onTapped: root.openDesktopSettings("health") }
-        }
-    }
-
     Item {
         id: barContentItem
         objectName: "bar-content"
@@ -85,7 +68,6 @@ PanelWindow {
         focus: bar.isKeyboardFocused
 
         Keys.onEscapePressed: {
-            if (DesktopState.editing) DesktopState.finishEdit(false);
             bar.isKeyboardFocused = false;
         }
 
@@ -101,7 +83,7 @@ PanelWindow {
             height: 38
             width: navigationRow.implicitWidth + 24
             color: Theme.glassBg
-            border.width: DesktopState.editing ? 1 : 0
+            border.width: 0
             border.color: Theme.accent
             radius: 19
             antialiasing: true
@@ -142,37 +124,15 @@ PanelWindow {
             objectName: "bar-clock"
             anchors.centerIn: parent
             height: 38
-            width: DesktopState.editing ? editActions.implicitWidth + 24 : centeredClock.width + 24
+            width: centeredClock.width + 24
             color: Theme.glassBg
-            border.width: DesktopState.editing ? 1 : 0
+            border.width: 0
             border.color: Theme.accent
             radius: 19
             antialiasing: true
-            Row {
-                id: editActions
-                anchors.centerIn: parent
-                spacing: 6
-                visible: DesktopState.editing
-                Repeater {
-                    model: ["Save", "Cancel", "Reset"]
-                    BarItem {
-                        required property string modelData
-                        width: editLabel.implicitWidth + 14
-                        Text { id: editLabel; anchors.centerIn: parent; text: parent.modelData; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 11 }
-                        function act() {
-                            if (modelData === "Reset") DesktopState.resetLayout();
-                            else DesktopState.finishEdit(modelData === "Save");
-                        }
-                        Keys.onReturnPressed: act()
-                        Keys.onSpacePressed: act()
-                        TapHandler { onTapped: parent.act() }
-                    }
-                }
-            }
             Clock {
                 id: centeredClock
                 parentWindow: bar
-                visible: !DesktopState.editing
                 anchors.centerIn: parent
             }
         }
@@ -190,10 +150,10 @@ PanelWindow {
             contentHeight: height
             contentX: Math.max(0, contentWidth - width)
             clip: contentWidth > width
-            interactive: contentWidth > width && !DesktopState.editing
+            interactive: contentWidth > width
             boundsBehavior: Flickable.StopAtBounds
             flickableDirection: Flickable.HorizontalFlick
-            HoverHandler { id: rightWingHover; blocking: false; enabled: !DesktopState.editing }
+            HoverHandler { id: rightWingHover; blocking: false }
 
             Row {
                 id: rightGroups
@@ -204,13 +164,12 @@ PanelWindow {
                     height: 38
                     width: Math.max(controlsRow.targetWidth, controlsRow.implicitWidth) + 20
                     color: Theme.glassBg
-            border.width: DesktopState.editing ? 1 : 0
+            border.width: 0
             border.color: Theme.accent
                     radius: 19
                     antialiasing: true
-                    clip: !DesktopState.editing
+                    clip: true
                     Behavior on width {
-                        enabled: !DesktopState.editing
                         NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
                     }
                     MovableGroup {
@@ -218,11 +177,9 @@ PanelWindow {
                         anchors.right: parent.right
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
-                        groupKey: "controls"
                         keys: DesktopState.controls
                         registry: bar.widgetRegistry
                         hoverSession: rightWingHover.hovered
-                        onDropRequested: (key, globalX, globalY) => bar.handleControlDrop(key, globalX, globalY)
                     }
                 }
                 Rectangle {
@@ -231,13 +188,12 @@ PanelWindow {
                     height: 38
                     width: Math.max(statusRow.targetWidth, statusRow.implicitWidth) + 20
                     color: Theme.glassBg
-            border.width: DesktopState.editing ? 1 : 0
+            border.width: 0
             border.color: Theme.accent
                     radius: 19
                     antialiasing: true
-                    clip: !DesktopState.editing
+                    clip: true
                     Behavior on width {
-                        enabled: !DesktopState.editing
                         NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
                     }
                     MovableGroup {
@@ -245,11 +201,9 @@ PanelWindow {
                         anchors.right: parent.right
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
-                        groupKey: "status"
                         keys: DesktopState.status
                         registry: bar.widgetRegistry
                         hoverSession: rightWingHover.hovered
-                        onDropRequested: (key, globalX, globalY) => bar.handleControlDrop(key, globalX, globalY)
                     }
                 }
             }

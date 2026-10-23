@@ -10,18 +10,8 @@ BarItem {
     width: contentRow.implicitWidth + 16
     
     HoverHandler { id: hover }
-    Accessible.name: "Keep awake " + (DesktopState.caffeine ? "on" : "off") + ", Do Not Disturb " + (DndService.isEnabled ? "on" : "off")
-    Accessible.description: "Left click toggles keep awake. Right click toggles Do Not Disturb."
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Menu) { DndService.toggle(); event.accepted = true; }
-    }
-    Rectangle {
-        anchors { right: parent.right; top: parent.top; margins: 3 }
-        width: 4; height: 4; radius: 2
-        color: Theme.accent
-        visible: DndService.isEnabled
-    }
-    
+    Accessible.name: "Keep awake " + (DesktopState.caffeine ? "on" : "off")
+    Accessible.description: "Toggle keep awake."
 
     Keys.onReturnPressed: DesktopState.caffeine = !DesktopState.caffeine
     Keys.onSpacePressed: DesktopState.caffeine = !DesktopState.caffeine
@@ -57,10 +47,7 @@ BarItem {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: event => {
-            if (event.button === Qt.RightButton) DndService.toggle();
-            else DesktopState.caffeine = !DesktopState.caffeine;
-        }
+        acceptedButtons: Qt.LeftButton
+        onClicked: DesktopState.caffeine = !DesktopState.caffeine
     }
 }

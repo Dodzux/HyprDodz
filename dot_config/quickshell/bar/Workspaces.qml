@@ -1,5 +1,4 @@
 pragma ComponentBehavior: Bound
-
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -9,20 +8,61 @@ import qs.services
 
 Row {
     id: workspaces
-    // No Row spacing: each slot carries its own 6px gap inside its animated
-    // width, so a slot sliding in or out never makes the spacing jump.
-    WorkspaceMenu { id: workspaceMenu }
     spacing: 0
     property var peekClients: []
     property int requestedPeek: 0
     property int activePeek: 0
-    function requestPeek(id) {
-        requestedPeek = id;
-        if (!clientFetch.running) clientFetch.running = true;
+    property int displayedPeek: 0
+    onActivePeekChanged: if (activePeek > 0) displayedPeek = activePeek
+    property int hoveredWorkspaceId: 0
+    property var pendingAnchor: null
+    property bool refreshPending: false
+
+    function hidePeek() {
+        openPeek.stop(); closePeek.stop();
+        requestedPeek = 0; activePeek = 0;
     }
-    function closePeekFor(id) {
-        if (requestedPeek === id) requestedPeek = 0;
-        if (activePeek === id) activePeek = 0;
+    function beginPeek(id, item) {
+        hoveredWorkspaceId = id;
+        closePeek.stop();
+        if (!occupied[String(id)]) { hidePeek(); return; }
+        if (activePeek === id) return;
+        activePeek = 0; requestedPeek = 0;
+        pendingAnchor = item;
+        openPeek.restart();
+    }
+    function leavePeek(id) {
+        if (hoveredWorkspaceId !== id) return;
+        hoveredWorkspaceId = 0;
+        openPeek.stop();
+        if (activePeek > 0) closePeek.restart();
+        else requestedPeek = 0;
+    }
+    function fetchPreview() {
+        if (clientFetch.running) refreshPending = true;
+        else clientFetch.running = true;
+    }
+    Component.onCompleted: Hyprland.refreshToplevels()
+    Timer {
+        id: openPeek
+        interval: 240
+        onTriggered: {
+            if (!workspaces.hoveredWorkspaceId || !workspaces.pendingAnchor) return;
+            preview.anchor.item = workspaces.pendingAnchor;
+            workspaces.requestedPeek = workspaces.hoveredWorkspaceId;
+            workspaces.fetchPreview();
+        }
+    }
+    Timer {
+        id: closePeek
+        interval: 180
+        onTriggered: if (!peekHover.hovered && !workspaces.hoveredWorkspaceId) workspaces.hidePeek()
+    }
+    Timer {
+        interval: 450
+        repeat: true
+        running: workspaces.activePeek > 0
+        onTriggered: workspaces.fetchPreview()
     }
     Process {
         id: clientFetch
@@ -30,25 +70,63 @@ Row {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    workspaces.peekClients = JSON.parse(this.text);
-                    workspaces.activePeek = workspaces.peekClients.some(c => c.workspace === String(workspaces.requestedPeek)) ? workspaces.requestedPeek : 0;
+                    var data = JSON.parse(text);
+                    if (!Array.isArray(data)) throw new Error("Invalid workspace data");
+                    workspaces.peekClients = data;
+                    var id = workspaces.requestedPeek;
+                    if (id > 0 && (workspaces.hoveredWorkspaceId === id || workspaces.activePeek === id || peekHover.hovered))
+                        workspaces.activePeek = data.some(c => c.workspace === String(id)) ? id : 0;
+                } catch (error) {
+                    workspaces.activePeek = 0;
+                    console.warn("Workspace preview:", error);
                 }
-                catch (error) { console.warn("Workspace peek:", error); }
             }
         }
+        onExited: Qt.callLater(() => {
+            if (workspaces.refreshPending && workspaces.requestedPeek > 0) {
+                workspaces.refreshPending = false;
+                workspaces.fetchPreview();
+            }
+        })
     }
-    Component.onCompleted: {
-        Hyprland.refreshToplevels();
-    }
-    Timer {
-        id: refreshPeek
-        interval: 90
-        onTriggered: if (workspaces.requestedPeek > 0 && !clientFetch.running) clientFetch.running = true
-    }
+    Process { id: focusWindow }
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (workspaces.requestedPeek > 0 && /^(openwindow|closewindow|movewindow)/.test(event.name)) refreshPeek.restart();
+            if (workspaces.requestedPeek > 0 && /^(openwindow|closewindow|movewindow|activewindow|monitor)/.test(event.name))
+                workspaces.fetchPreview();
+        }
+    }
+    PopupWindow {
+        id: preview
+        anchor.item: workspaces
+        anchor.rect.y: anchor.item ? anchor.item.height + 8 : 0
+        implicitWidth: peek.implicitWidth
+        implicitHeight: peek.implicitHeight
+        color: "transparent"
+        readonly property bool opened: workspaces.activePeek > 0
+        property real reveal: opened ? 1 : 0
+        Behavior on reveal { NumberAnimation { duration: preview.opened ? 140 : 100; easing.type: Easing.OutCubic } }
+        visible: opened || reveal > 0.001
+        WorkspacePeek {
+            id: peek
+            anchors.fill: parent
+            opacity: preview.reveal
+            workspaceId: String(workspaces.displayedPeek)
+            clients: workspaces.peekClients
+            HoverHandler {
+                id: peekHover
+                onHoveredChanged: {
+                    if (hovered) closePeek.stop();
+                    else closePeek.restart();
+                }
+            }
+            onSelected: client => {
+                workspaces.hidePeek();
+                if (focusWindow.running) return;
+                focusWindow.command = ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "focus-window", "--request", JSON.stringify({address: client.address, pid: client.pid})];
+                focusWindow.running = true;
+            }
         }
     }
 
@@ -77,6 +155,7 @@ Row {
     // occupied. Pull the current client list once up front.
 
     function goTo(target) {
+        hidePeek();
         Hyprland.dispatch("hl.dsp.focus({ workspace = " + target + " })");
     }
 
@@ -123,45 +202,8 @@ Row {
                 HoverHandler {
                     id: wsHover
                     onHoveredChanged: {
-                        if (hovered) { closePeek.stop(); openPeek.restart(); }
-                        else { openPeek.stop(); closePeek.restart(); }
-                    }
-                }
-                Timer {
-                    id: openPeek
-                    interval: 260
-                    onTriggered: workspaces.requestPeek(wsRect.wsId)
-                }
-                Timer { id: closePeek; interval: 180; onTriggered: { if (!peekHover.hovered) workspaces.closePeekFor(wsRect.wsId); } }
-                PopupWindow {
-                    id: peekWindow
-                    anchor.item: wsRect
-                    anchor.rect.y: wsRect.height + 8
-                    implicitWidth: 220
-                    implicitHeight: 150
-                    color: "transparent"
-                    readonly property bool opened: workspaces.activePeek === wsRect.wsId
-                    property real reveal: opened ? 1 : 0
-                    Behavior on reveal { NumberAnimation { duration: peekWindow.opened ? Theme.motionNormal : Theme.motionExit; easing.type: Easing.OutCubic } }
-                    visible: opened || reveal > 0.001
-                    WorkspacePeek {
-                        anchors.fill: parent
-                        opacity: peekWindow.reveal
-                        scale: 0.96 + 0.04 * peekWindow.reveal
-                        transform: Translate { y: -5 * (1 - peekWindow.reveal) }
-                        workspaceId: String(wsRect.wsId)
-                        clients: workspaces.peekClients
-                        HoverHandler {
-                            id: peekHover
-                            onHoveredChanged: {
-                                if (hovered) closePeek.stop();
-                                else closePeek.restart();
-                            }
-                        }
-                        onSelected: client => {
-                            workspaces.closePeekFor(wsRect.wsId);
-                            Hyprland.dispatch('hl.dsp.focus({ window = "address:' + client.address + '" })');
-                        }
+                        if (hovered) workspaces.beginPeek(wsRect.wsId, wsRect);
+                        else workspaces.leavePeek(wsRect.wsId);
                     }
                 }
                 // Highlight when focused, hovered, or occupied
@@ -209,16 +251,8 @@ Row {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-                    onClicked: event => {
-                        if (event.button === Qt.RightButton) {
-                            workspaces.requestedPeek = 0; workspaces.activePeek = 0;
-                            openPeek.stop(); closePeek.stop();
-                            workspaceMenu.anchor.item = wsRect;
-                            workspaceMenu.workspaceId = wsRect.wsId;
-                            workspaceMenu.open();
-                        } else workspaces.goTo(wsRect.wsId);
-                    }
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: workspaces.goTo(wsRect.wsId)
                     // Same direction as SUPER+scroll in keybindings.lua. This used
                     // to exec `hyprctl dispatch workspace e-1` — hyprlang syntax,
                     // which the Lua config rejects ("')' expected near 'e'").

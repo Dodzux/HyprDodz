@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import qs
@@ -8,25 +9,17 @@ Rectangle {
     property var clients: []
     signal selected(var client)
     readonly property var windows: clients.filter(c => c.workspace === workspaceId)
+    readonly property real aspect: windows.length ? (windows[0].aspect || 1.6) : 1.6
+    implicitWidth: 184
+    implicitHeight: Math.round((implicitWidth - 16) / aspect) + 16
     color: Theme.glassBg
-    radius: 12
-    border.color: Theme.launcherSelectionBorder
-    implicitWidth: 220
-    implicitHeight: 150
+    radius: 10
+    border.color: Theme.glassBorder
+    antialiasing: true
 
-    Text {
-        x: 10; y: 9
-        text: "Workspace " + peek.workspaceId + " · " + peek.windows.length + " apps"
-        color: Theme.text
-        font.family: Theme.fontMain
-        font.pixelSize: 10
-    }
-    Rectangle {
+    Item {
         id: desktop
-        anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom; margins: 9; topMargin: 29; bottomMargin: 23 }
-        radius: 7
-        color: "transparent"
-        border.color: Theme.glassBorder
+        anchors { fill: parent; margins: 8 }
         clip: true
         Repeater {
             model: peek.windows
@@ -35,43 +28,27 @@ Rectangle {
                 required property var modelData
                 x: modelData.x * desktop.width
                 y: modelData.y * desktop.height
-                width: Math.min(Math.max(0, desktop.width - x), Math.max(24, modelData.w * desktop.width))
-                height: Math.min(Math.max(0, desktop.height - y), Math.max(24, modelData.h * desktop.height))
-                radius: 5
+                width: Math.max(0, Math.min(desktop.width - x, modelData.w * desktop.width))
+                height: Math.max(0, Math.min(desktop.height - y, modelData.h * desktop.height))
+                radius: 4
                 color: hover.hovered ? Theme.launcherSelectionBg : "transparent"
-                border.color: hover.hovered ? Theme.accent : Theme.glassBorder
+                border.color: hover.hovered ? Theme.accent : Theme.borderMuted
                 Behavior on color { ColorAnimation { duration: Theme.motionFast } }
-                Behavior on border.color { ColorAnimation { duration: Theme.motionFast } }
                 readonly property var app: DesktopEntries.heuristicLookup(modelData.class === "org.yazi.fm" ? "yazi" : modelData.class)
                 Image {
                     anchors.centerIn: parent
-                    width: Math.min(22, Math.max(0, parent.width - 4))
-                    height: Math.min(22, Math.max(0, parent.height - 4))
+                    width: Math.max(0, Math.min(18, parent.width - 4, parent.height - 4))
+                    height: width
                     source: {
                         var icon = tile.app && tile.app.icon ? tile.app.icon : "application-x-executable";
-                        return icon.startsWith("/") ? icon : "image://icon/" + icon;
+                        return icon.startsWith("/") ? "file://" + icon : "image://icon/" + icon;
                     }
-                    sourceSize: Qt.size(22, 22)
+                    sourceSize: Qt.size(18, 18)
                     fillMode: Image.PreserveAspectFit
                 }
                 HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: peek.selected(tile.modelData) }
             }
         }
-        Text {
-            anchors.centerIn: parent
-            visible: peek.windows.length === 0
-            text: "Empty workspace"
-            color: Theme.subtext0
-            font.family: Theme.fontMain
-            font.pixelSize: 11
-        }
-    }
-    Text {
-        anchors { left: parent.left; bottom: parent.bottom; margins: 9 }
-        text: "Click an app to focus it"
-        color: Theme.subtext0
-        font.family: Theme.fontMain
-        font.pixelSize: 9
     }
 }

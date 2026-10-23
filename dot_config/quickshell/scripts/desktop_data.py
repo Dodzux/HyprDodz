@@ -43,14 +43,28 @@ def workspaces():
         if not monitor:
             continue
         width, height = monitor["width"] / monitor["scale"], monitor["height"] / monitor["scale"]
+        if monitor.get("transform", 0) % 2:
+            width, height = height, width
         # App identity and rectangles suffice: no screenshots or document titles.
-        result.append({"address": client["address"], "class": client["class"],
+        result.append({"address": client["address"], "pid": client["pid"], "class": client["class"], "aspect": width / height,
                        "workspace": str(client["workspace"]["name"]),
                        "x": max(0, min(1, (client["at"][0] - monitor["x"]) / width)),
                        "y": max(0, min(1, (client["at"][1] - monitor["y"]) / height)),
-                       "w": max(.03, min(1, client["size"][0] / width)),
-                       "h": max(.03, min(1, client["size"][1] / height))})
+                       "w": max(0, min(1, (client["at"][0] + client["size"][0] - monitor["x"]) / width) - max(0, (client["at"][0] - monitor["x"]) / width)),
+                       "h": max(0, min(1, (client["at"][1] + client["size"][1] - monitor["y"]) / height) - max(0, (client["at"][1] - monitor["y"]) / height))})
     return result
+
+
+def focus_preview_window(request):
+    address, pid = request.get("address"), request.get("pid")
+    if not isinstance(address, str) or not re.fullmatch(r"0x[0-9a-fA-F]+", address):
+        raise ValueError("Invalid window address")
+    client = next((c for c in hypr_json("clients") if c.get("address") == address
+                   and c.get("pid") == pid and c.get("mapped") and not c.get("hidden")), None)
+    if not client:
+        raise ValueError("That window has closed; hover again to refresh")
+    dispatch(f'hl.dsp.focus({{window="address:{address}"}})')
+    return {"ok": True}
 
 
 def overview_snapshot():
@@ -180,16 +194,16 @@ def palettes(cache):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "overview", "overview-action"])
+    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "overview", "overview-action", "focus-window"])
     parser.add_argument("--cache", type=Path, default=HOME / ".cache/quickshell/wallpaper-palettes")
     parser.add_argument("--request", help="Validated overview action as JSON")
     args = parser.parse_args()
     try:
-        if args.mode == "overview-action":
+        if args.mode in ("overview-action", "focus-window"):
             request = json.loads(args.request or "{}")
             if not isinstance(request, dict):
                 raise ValueError("Invalid action")
-            data = overview_action(request)
+            data = overview_action(request) if args.mode == "overview-action" else focus_preview_window(request)
         elif args.mode == "overview":
             data = overview_snapshot()
         else:

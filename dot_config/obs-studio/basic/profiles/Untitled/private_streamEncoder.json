@@ -1,0 +1,13 @@
+{
+  "rate_control": "CBR",
+  "bitrate": 6000,
+  "keyint_sec": 0,
+  "preset": "p5",
+  "tune": "hq",
+  "multipass": "qres",
+  "profile": "high",
+  "lookahead": true,
+  "adaptive_quantization": true,
+  "bf": 2,
+  "device": -1
+}

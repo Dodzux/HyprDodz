@@ -190,8 +190,6 @@ ShellRoot {
     }
 
 
-    signal openDesktopSettings(string section)
-    onOpenDesktopSettings: section => desktopSettings.open(section, getFocusedScreen())
 
     signal togglePowerMenu()
     signal toggleBarFocus()
@@ -369,15 +367,6 @@ ShellRoot {
     // ▓▒░ APP LAUNCHER — SUPER+A (GlobalShortcut registered inside AppLauncher.qml)
     // Replaces: rofi -show drun
     AppLauncher {}
-    DesktopSettings { id: desktopSettings }
-    IpcHandler {
-        target: "desktop"
-        function settings(tab: string): void { root.openDesktopSettings(tab); }
-        function edit(): void { DesktopState.beginEdit(); }
-        function cancel(): void { DesktopState.finishEdit(false); }
-        function status(): string { return JSON.stringify({editing: DesktopState.editing, controls: DesktopState.controls, status: DesktopState.status, caffeine: DesktopState.caffeine, dnd: DndService.isEnabled, error: DesktopState.error}); }
-    }
-
     // ▓▒░ SCREENSHOT PANEL — Print key (GlobalShortcut registered inside ScreenshotPanel.qml)
     // Replaces: ~/.config/rofi/screenshot.sh
     ScreenshotPanel {

@@ -78,7 +78,7 @@ hl.config({
     -- ▓▒░ RENDERING & OPTIMIZATION
     render = {
         -- direct_scanout        = 2,
-        new_render_scheduling = true,
+        new_render_scheduling = false,
         -- NOTE: direct_scanout is commented out with the other gaming settings —
         --       this machine isn't used for gaming. 2 meant "auto", i.e. only for
         --       content type "game", so nothing changes: the default is 0 (off).

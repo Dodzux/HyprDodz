@@ -1,0 +1,99 @@
+@OBSThemeMeta {
+    name: 'Desktop Graphite';
+    id: 'local.hyprdodz.DesktopGraphite';
+    extends: 'com.obsproject.Yami';
+    author: 'HyprDodz';
+    dark: 'true';
+}
+
+@OBSThemeVars {
+    --grey1: #555555;
+    --grey2: #484848;
+    --grey3: #383838;
+    --grey4: #303030;
+    --grey5: #242424;
+    --grey6: #181818;
+    --grey7: #111111;
+    --grey8: #0b0b0b;
+    --white1: #f5f5f5;
+    --white2: #e5e5e5;
+    --white3: #d2d2d2;
+    --white4: #b4b4b4;
+    --white5: #969696;
+
+    --desktop_accent: #5884bb;
+    --desktop_tint: #26303c;
+    --desktop_tint_hover: #2c3b4c;
+    --primary: #44648b;
+    --primary_light: #496c98;
+    --primary_lighter: var(--desktop_accent);
+    --primary_dark: #38506f;
+    --primary_darker: #2d3f55;
+    --blue1: var(--desktop_accent);
+    --blue2: var(--primary_light);
+    --blue3: var(--primary);
+    --blue4: var(--primary_dark);
+    --blue5: var(--primary_darker);
+
+    --border_color: #303030;
+    --border_radius: 6px;
+    --border_radius_small: 4px;
+    --border_radius_large: 8px;
+    --input_bg: #202020;
+    --input_bg_hover: #242424;
+    --input_bg_focus: #181818;
+    --input_border: #383838;
+    --input_border_hover: #555555;
+    --input_border_focus: var(--desktop_accent);
+    --button_bg: #242424;
+    --button_bg_hover: #303030;
+    --button_bg_down: #181818;
+    --button_border: #303030;
+    --button_border_hover: var(--desktop_accent);
+    --button_border_focus: var(--desktop_accent);
+    --scrollbar_size: 10px;
+    --scrollbar_handle: #383838;
+    --scrollbar_hover: #555555;
+    --palette_link: var(--desktop_accent);
+    --palette_linkVisited: var(--desktop_accent);
+}
+
+QWidget {
+    font-family: 'CaskaydiaCove Nerd Font', 'Cascadia Code', sans-serif;
+}
+
+QDockWidget::title {
+    background-color: #202020;
+    color: #e5e5e5;
+}
+
+QMenu::item:selected,
+QMenu > QWidget:selected,
+QListView::item:selected,
+QListWidget::item:selected {
+    background-color: var(--desktop_tint);
+    border-color: var(--desktop_accent);
+}
+
+QMenu::item:selected:hover,
+QListView::item:selected:hover,
+QListWidget::item:selected:hover {
+    background-color: var(--desktop_tint_hover);
+    border-color: var(--desktop_accent);
+}
+
+QMenuBar::item:selected {
+    background-color: var(--desktop_tint);
+    border-radius: 4px;
+}
+
+OBSDock QToolBar QToolButton:hover {
+    background-color: var(--desktop_tint);
+    border-color: var(--desktop_accent);
+}
+
+QToolTip {
+    border: 1px solid var(--border_color);
+    padding: 6px;
+    border-radius: 4px;
+}

@@ -25,15 +25,15 @@ DirHistory[$e]=$HOME/Downloads/,$HOME/Downloads/CascadiaCode/,$HOME/.local/share
 HiddenFilesShown=true
 
 [General]
+ShowFullPath=true
+ShowFullPathInTitlebar=true
 ShowSelectionToggle=true
 ShowSpaceInfo=false
+ShowStatusBar=1
 ShowZoomSlider=true
 Version=202
 ViewPropsTimestamp=2023,4,26,16,58,48.324
 
-ShowStatusBar=1
-ShowFullPath=true
-ShowFullPathInTitlebar=true
 [Icons]
 Theme=Tela-circle-black-dark
 
@@ -51,7 +51,7 @@ Places Icons Static Size=48
 MenuBar=Disabled
 
 [MainWindow][Toolbar mainToolBar]
-IconSize=22
+IconSize=16
 ToolButtonStyle=IconOnly
 
 [PlacesPanel]
@@ -66,8 +66,6 @@ Location=Everywhere
 [Toolbar mainToolBar]
 IconSize=22
 ToolButtonStyle=IconOnly
-
-[UiSettings]
 
 [ViewPropertiesDialog]
 1920x1080 screen: Window-Maximized=true
