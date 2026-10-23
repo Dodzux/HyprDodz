@@ -4,33 +4,6 @@
 
 ![HyprDodz desktop](assets/screenshots/preview.png)
 
-<details>
-<summary>▶ Watch the desktop tour — MP4</summary>
-
-**1. Apps, calculator and copying**
-
-https://github.com/user-attachments/assets/a80fdc1d-9d8c-4504-acc5-2d6c21937c2c
-
-**2. Shortcuts and quick actions**
-
-https://github.com/user-attachments/assets/859b9aa8-272f-40f2-9562-ba79e64bc4de
-
-**3. Wallpapers, bookmarks and bar layout**
-
-https://github.com/user-attachments/assets/303a4f43-4a00-4929-8d85-e0465b6c4706
-
-**4. Desktop controls and workspaces**
-
-https://github.com/user-attachments/assets/62f6bfa3-95f4-422d-8ef8-14ee023edc16
-
-**5. Panels and session controls**
-
-https://github.com/user-attachments/assets/68bba725-4e9b-4289-81c9-134288bdba7f
-
-[Download the MP4 chapters](assets/videos/)
-
-</details>
-
 ---
 
 Desktop and personal app settings for **CachyOS**, intended for an existing Arch-family installation.
@@ -264,7 +237,7 @@ git push
 | `scripts/` | Full bootstrap, showcase capture, audits and snapshot helpers |
 | `system/` | Greeter and supplemental settings |
 | `docs/reports/` | Detailed restore and verification records |
-| `assets/` | Desktop preview and tour |
+| `assets/screenshots/` | Desktop preview |
 
 All existing app configs are kept, including OBS, Micro, Inkscape, Discord, Obsidian, OpenRGB, Qt/KDE tools and Git. Most repository files are bundled icons and themes; desktop customization starts in `dot_config/hypr/` and `dot_config/quickshell/`.
 
