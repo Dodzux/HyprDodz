@@ -6,5 +6,6 @@ dot_config/micro/syntax/** linguist-vendored=true
 system/usr/share/sddm/themes/** linguist-vendored=true
 Pictures/Wallpapers/** linguist-vendored=true
 assets/screenshots/** linguist-vendored=true
+assets/videos/** linguist-vendored=true
 # Diagnostic output is generated; guides remain ordinary documentation.
 docs/reports/config-coverage.md linguist-generated=true
