@@ -1,17 +1,100 @@
 #!/bin/sh
-# Open Codex in its own window. An explicit first folder overrides the default.
+# Desktop launches default to ~/Codex; explicit folders and saved sessions win.
 set -eu
 
+launch_dir="$HOME/Codex"
+folder_given=false
+cli_dir=false
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
     cd -- "$1"
+    launch_dir=$(pwd -P)
+    folder_given=true
     shift
-else
-    mkdir -p -- "$HOME/Codex"
-    cd -- "$HOME/Codex"
 fi
 
+# Resolve -C/--cd against the caller (or the explicit first folder), before
+# changing to the default. Rotate the original arguments to preserve quoting.
+remaining=$#
+scan=true
+while [ "$remaining" -gt 0 ]; do
+    arg=$1
+    shift
+    remaining=$((remaining - 1))
+    if [ "$scan" = true ]; then
+        case "$arg" in
+            --) scan=false ;;
+            -C|--cd)
+                if [ "$remaining" -eq 0 ]; then
+                    printf '%s\n' 'codex-terminal: -C/--cd requires a directory' >&2
+                    exit 2
+                fi
+                directory=$1
+                shift
+                remaining=$((remaining - 1))
+                launch_dir=$(CDPATH='' cd -- "$directory" && pwd -P)
+                cli_dir=true
+                set -- "$@" "$arg" "$launch_dir"
+                continue
+                ;;
+            --cd=*)
+                launch_dir=$(CDPATH='' cd -- "${arg#--cd=}" && pwd -P)
+                cli_dir=true
+                arg="--cd=$launch_dir"
+                ;;
+            -C?*)
+                launch_dir=$(CDPATH='' cd -- "${arg#-C}" && pwd -P)
+                cli_dir=true
+                arg="-C$launch_dir"
+                ;;
+        esac
+    fi
+    set -- "$@" "$arg"
+done
+
+if [ "$folder_given" = false ] && [ "$cli_dir" = false ]; then
+    mkdir -p -- "$launch_dir"
+fi
+cd -- "$launch_dir"
+
 if [ "$#" -eq 0 ]; then
-    set -- resume --last --all --cd "$PWD"
+    if [ "$folder_given" = true ]; then
+        set -- resume --last --cd "$PWD"
+    else
+        # Background writes can make --last choose an older conversation.
+        # Read user-activity recency instead; never alter Codex's database.
+        session_id=$(python3 - <<'PY'
+import os, sqlite3, uuid
+from pathlib import Path
+
+home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+try:
+    with sqlite3.connect((home / 'state_5.sqlite').resolve().as_uri() + '?mode=ro',
+                         uri=True, timeout=0.1) as db:
+        rows = db.execute('''SELECT id, rollout_path FROM threads
+            WHERE archived = 0 AND source IN ('cli', 'vscode')
+            ORDER BY recency_at_ms DESC, recency_at DESC, created_at DESC, id DESC''')
+        for session_id, rollout_path in rows:
+            try:
+                session_id = str(uuid.UUID(session_id))
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if rollout_path and Path(rollout_path).is_file():
+                print(session_id)
+                break
+except (sqlite3.Error, OSError, ValueError):
+    pass  # Missing or changed history schema: use the native selector below.
+PY
+        )
+        if [ -n "$session_id" ]; then
+            set -- resume "$session_id"
+        else
+            set -- resume --last --all
+        fi
+    fi
+elif [ "$folder_given" = true ] && [ "$cli_dir" = false ]; then
+    case "$1" in
+        resume|fork) set -- "$@" --cd "$PWD" ;;
+    esac
 fi
 
 exec /usr/bin/kitty --detach --class=codex --title=Codex \
