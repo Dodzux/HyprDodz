@@ -1,4 +1,4 @@
-# HyprDodz — CachyOS Hyprland Dotfiles
+# HyprDodz — CachyOS Hyprland Dotfiles.
 
 > My Hyprland desktop on an ASUS ROG Strix G16: modular Lua configs, a custom Quickshell UI, and wallpaper colors shared across the desktop. Managed with chezmoi.
 
