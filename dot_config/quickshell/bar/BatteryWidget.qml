@@ -21,8 +21,10 @@ BarItem {
     readonly property int batPct: hasBat ? Math.round(Math.max(0, Math.min(1, bat.percentage)) * 100) : 0
 
     readonly property string batteryGlyph: {
-        if (!hasBat) return "󰂎"
-        if (pluggedIn) return "󰚥";
+        if (!hasBat)
+            return "󰂎";
+        if (pluggedIn)
+            return "󰚥";
         var levels = ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"];
         return levels[Math.ceil(batPct / 10)];
     }
@@ -31,12 +33,27 @@ BarItem {
     visible: hasBat
 
     readonly property var modes: [
-        { name: "Silent", key: "power-saver", value: Up.PowerProfile.PowerSaver,
-          icon: "󰌪", detail: "Quieter fans · lower power" },
-        { name: "Performance", key: "balanced", value: Up.PowerProfile.Balanced,
-          icon: "󰓅", detail: "Balanced speed and fan noise" },
-        { name: "Turbo", key: "performance", value: Up.PowerProfile.Performance,
-          icon: "", detail: "Maximum performance · louder fans" }
+        {
+            name: "Silent",
+            key: "power-saver",
+            value: Up.PowerProfile.PowerSaver,
+            icon: "󰌪",
+            detail: "lower power · Quieter fans"
+        },
+        {
+            name: "Performance",
+            key: "balanced",
+            value: Up.PowerProfile.Balanced,
+            icon: "󰓅",
+            detail: "Balanced speed and fan noise"
+        },
+        {
+            name: "Turbo",
+            key: "performance",
+            value: Up.PowerProfile.Performance,
+            icon: "",
+            detail: "Maximum performance · louder fans"
+        }
     ]
     readonly property int currentIndex: modes.findIndex(m => m.value === Up.PowerProfiles.profile)
     readonly property var currentMode: modes[Math.max(0, currentIndex)]
@@ -48,15 +65,20 @@ BarItem {
     Accessible.onPressAction: widget.toggleMenu()
 
     function toggleMenu() {
-        if (menu.visible) { menu.visible = false; return; }
+        if (menu.visible) {
+            menu.visible = false;
+            return;
+        }
         errorMessage = "";
         menu.selectedIndex = Math.max(0, currentIndex);
         menu.visible = true;
     }
 
     function choose(index) {
-        if (busy || index < 0 || index >= modes.length) return;
-        if (index === 2 && !Up.PowerProfiles.hasPerformanceProfile) return;
+        if (busy || index < 0 || index >= modes.length)
+            return;
+        if (index === 2 && !Up.PowerProfiles.hasPerformanceProfile)
+            return;
         if (modes[index].value === Up.PowerProfiles.profile) {
             menu.visible = false;
             return;
@@ -69,14 +91,21 @@ BarItem {
     Keys.onReturnPressed: toggleMenu()
     Keys.onSpacePressed: toggleMenu()
     Keys.onEscapePressed: menu.visible = false
-    TapHandler { onTapped: widget.toggleMenu() }
+    TapHandler {
+        onTapped: widget.toggleMenu()
+    }
 
     Row {
         id: contentRow
         anchors.centerIn: parent
         spacing: isHoveredOrFocused ? 4 : 0
 
-        Behavior on spacing { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on spacing {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
+        }
 
         Row {
             id: batteryIcons
@@ -93,7 +122,11 @@ BarItem {
                 font.pixelSize: 14
                 renderType: Text.NativeRendering
                 opacity: widget.busy ? 0.5 : 1
-                Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Theme.motionFast
+                    }
+                }
             }
 
             Text {
@@ -117,17 +150,27 @@ BarItem {
             font.pixelSize: 10
             font.weight: Font.Bold
             renderType: Text.NativeRendering
-            
+
             clip: true
             width: isHoveredOrFocused ? implicitWidth : 0
             opacity: isHoveredOrFocused ? 1.0 : 0.0
 
-            Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-            Behavior on opacity { NumberAnimation { duration: 140 } }
+            Behavior on width {
+                NumberAnimation {
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 140
+                }
+            }
 
             text: {
-                if (!hasBat) return "00%"
-                return batPct.toString().padStart(2, '0') + "%"
+                if (!hasBat)
+                    return "00%";
+                return batPct.toString().padStart(2, '0') + "%";
             }
         }
     }
@@ -136,8 +179,10 @@ BarItem {
         id: applyMode
         stderr: StdioCollector {}
         onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && exitStatus === 0) menu.visible = false;
-            else widget.errorMessage = "Could not change mode. Please try again.";
+            if (exitCode === 0 && exitStatus === 0)
+                menu.visible = false;
+            else
+                widget.errorMessage = "Could not change mode. Please try again.";
         }
     }
 
@@ -161,8 +206,22 @@ BarItem {
 
         ParallelAnimation {
             id: reveal
-            NumberAnimation { target: card; property: "opacity"; from: 0; to: 1; duration: Theme.motionNormal; easing.type: Easing.OutCubic }
-            NumberAnimation { target: card; property: "scale"; from: 0.97; to: 1; duration: Theme.motionNormal; easing.type: Easing.OutCubic }
+            NumberAnimation {
+                target: card
+                property: "opacity"
+                from: 0
+                to: 1
+                duration: Theme.motionNormal
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: card
+                property: "scale"
+                from: 0.97
+                to: 1
+                duration: Theme.motionNormal
+                easing.type: Easing.OutCubic
+            }
         }
 
         Rectangle {
@@ -175,7 +234,12 @@ BarItem {
 
             Column {
                 id: content
-                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 12 }
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                    margins: 12
+                }
                 spacing: 5
                 focus: true
                 Keys.onEscapePressed: menu.visible = false
@@ -204,16 +268,30 @@ BarItem {
                     font.pixelSize: Theme.bodySize
                 }
                 Rectangle {
-                    width: parent.width; height: 6; radius: 3
+                    width: parent.width
+                    height: 6
+                    radius: 3
                     color: Theme.hoverBg
-                    Rectangle { width: parent.width * widget.batPct / 100; height: parent.height; radius: 3; color: widget.pluggedIn ? Theme.success : Theme.accent; Behavior on width { NumberAnimation { duration: Theme.motionNormal } } }
+                    Rectangle {
+                        width: parent.width * widget.batPct / 100
+                        height: parent.height
+                        radius: 3
+                        color: widget.pluggedIn ? Theme.success : Theme.accent
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: Theme.motionNormal
+                            }
+                        }
+                    }
                 }
                 Text {
                     width: parent.width
                     text: {
                         var seconds = widget.hasBat ? (widget.pluggedIn ? widget.bat.timeToFull : widget.bat.timeToEmpty) : 0;
-                        if (widget.batPct >= 99 && widget.pluggedIn) return "Fully charged";
-                        if (!(seconds > 0)) return "Time estimate unavailable";
+                        if (widget.batPct >= 99 && widget.pluggedIn)
+                            return "Fully charged";
+                        if (!(seconds > 0))
+                            return "Time estimate unavailable";
                         var minutes = Math.ceil(seconds / 60);
                         return Math.floor(minutes / 60) + "h " + minutes % 60 + "m " + (widget.pluggedIn ? "until full" : "remaining");
                     }
@@ -237,8 +315,16 @@ BarItem {
                         opacity: available ? 1 : 0.4
                         color: menu.selectedIndex === index ? Theme.launcherSelectionBg : "transparent"
                         border.color: menu.selectedIndex === index ? Theme.launcherSelectionBorder : "transparent"
-                        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
-                        Behavior on border.color { ColorAnimation { duration: Theme.motionFast } }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Theme.motionFast
+                            }
+                        }
+                        Behavior on border.color {
+                            ColorAnimation {
+                                duration: Theme.motionFast
+                            }
+                        }
 
                         Accessible.role: Accessible.RadioButton
                         Accessible.name: modelData.name
@@ -272,16 +358,23 @@ BarItem {
                             }
                         }
                         Text {
-                            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                            anchors {
+                                right: parent.right
+                                rightMargin: 10
+                                verticalCenter: parent.verticalCenter
+                            }
                             text: modeRow.activeMode ? "✓" : ""
                             color: Theme.accent
                             font.pixelSize: 14
                         }
                         HoverHandler {
                             cursorShape: modeRow.available && !widget.busy ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onHoveredChanged: if (hovered) menu.selectedIndex = modeRow.index
+                            onHoveredChanged: if (hovered)
+                                menu.selectedIndex = modeRow.index
                         }
-                        TapHandler { onTapped: widget.choose(modeRow.index) }
+                        TapHandler {
+                            onTapped: widget.choose(modeRow.index)
+                        }
                     }
                 }
 
@@ -297,9 +390,7 @@ BarItem {
                 Text {
                     width: parent.width
                     visible: Up.PowerProfiles.degradationReason !== Up.PerformanceDegradationReason.None
-                    text: Up.PowerProfiles.degradationReason === Up.PerformanceDegradationReason.HighTemperature
-                        ? "Performance is limited by temperature."
-                        : "Performance is limited by lap detection."
+                    text: Up.PowerProfiles.degradationReason === Up.PerformanceDegradationReason.HighTemperature ? "Performance is limited by temperature." : "Performance is limited by lap detection."
                     color: Theme.subtext0
                     font.family: Theme.fontMain
                     font.pixelSize: 10
