@@ -17,12 +17,14 @@ PanelWindow {
     color: "transparent"
 
     property bool isKeyboardFocused: false
-    WlrLayershell.keyboardFocus: isKeyboardFocused ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    property bool workspaceEditing:false
+    WlrLayershell.keyboardFocus: workspaceEditing ? WlrKeyboardFocus.Exclusive : isKeyboardFocused ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     Connections {
         target: root
         function onToggleBarFocus() {
             if (Hyprland.focusedMonitor && bar.screen && Hyprland.focusedMonitor.name === bar.screen.name) {
+                if(bar.workspaceEditing){workspaceList.endName(false);return;}
                 bar.isKeyboardFocused = !bar.isKeyboardFocused;
                 if (bar.isKeyboardFocused) {
                     barContentItem.forceActiveFocus();
@@ -70,6 +72,16 @@ PanelWindow {
         Keys.onEscapePressed: {
             bar.isKeyboardFocused = false;
         }
+        TapHandler {
+            acceptedButtons:Qt.AllButtons
+            onTapped:point=>{
+                if(!bar.workspaceEditing || !workspaceList.nameEditor)return;
+                var pill=workspaceList.nameEditor.parent;
+                var p=pill.mapFromItem(barContentItem,point.position.x,point.position.y);
+                if(p.x<0 || p.y<0 || p.x>pill.width || p.y>pill.height)workspaceList.endName(false);
+            }
+        }
+
 
         // Keep the clock centered even as either wing expands.
         readonly property real wingLimit: Math.max(0, (width - clockPill.width) / 2 - 18)
@@ -87,14 +99,14 @@ PanelWindow {
             border.color: Theme.accent
             radius: 19
             antialiasing: true
-            Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+            Behavior on width { enabled: !compactMedia.layoutAnimating; NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             Row {
                 id: navigationRow
                 height: 28
                 anchors.centerIn: parent
                 spacing: 8
 
-                Workspaces { id: workspaceList }
+                Workspaces { id: workspaceList;parentWindow:bar }
                 Rectangle { width: 1; height: 14; anchors.verticalCenter: parent.verticalCenter; color: Theme.borderMuted; visible: appStrip.width > 0 }
                 Taskbar {
                     id: appStrip
@@ -162,16 +174,13 @@ PanelWindow {
                     id: controlsPill
                     objectName: "bar-controls"
                     height: 38
-                    width: Math.max(controlsRow.targetWidth, controlsRow.implicitWidth) + 20
+                    width: controlsRow.implicitWidth + 20
                     color: Theme.glassBg
             border.width: 0
             border.color: Theme.accent
                     radius: 19
                     antialiasing: true
                     clip: true
-                    Behavior on width {
-                        NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
-                    }
                     MovableGroup {
                         id: controlsRow
                         anchors.right: parent.right
@@ -186,16 +195,13 @@ PanelWindow {
                     id: statusPill
                     objectName: "bar-status"
                     height: 38
-                    width: Math.max(statusRow.targetWidth, statusRow.implicitWidth) + 20
+                    width: statusRow.implicitWidth + 20
                     color: Theme.glassBg
             border.width: 0
             border.color: Theme.accent
                     radius: 19
                     antialiasing: true
                     clip: true
-                    Behavior on width {
-                        NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
-                    }
                     MovableGroup {
                         id: statusRow
                         anchors.right: parent.right

@@ -2,6 +2,8 @@
 
 > My Hyprland desktop on an ASUS ROG Strix G16: modular Lua configs, a custom Quickshell UI, and wallpaper colors shared across the desktop. Managed with chezmoi.
 
+**Version [0.2.0](https://github.com/Dodzux/HyprDodz/tree/v0.2.0)**
+
 ![HyprDodz desktop](assets/screenshots/preview.png)
 
 ---
@@ -45,6 +47,8 @@ For manual setup, `~/.config/hypr/scripts/bootstrap.sh` configures desktop user 
 | Compositor | Hyprland | Modular Lua config, launched directly |
 | Greeter | SDDM | Custom `hypr-sddm` theme |
 | Bar & panels | Quickshell | QML bar, launcher, clipboard, notifications, overview and wallpaper selector |
+| Planning | Quickshell | Planner, tasks and workspace names saved locally |
+| Display & media | Hyprsunset + CAVA | Night light, extra dimming and media visualizer |
 | Terminal | Kitty | Default terminal; Ghostty settings are also included |
 | Shell | Fish + Starship | Modular shell files and a custom prompt |
 | Editor | Neovim + NvChad | Lua configuration, plugins and language tooling |
@@ -68,6 +72,22 @@ Templates read `~/.local/state/hypr/accent`, preserving the selected color when 
 ```
 
 Accent-bearing configs are templates: `chezmoi re-add` skips them. Edit their source with `chezmoi edit` and retain the template expressions.
+
+### Optional: Strix Core
+
+[Strix Core](https://github.com/Dodzux/Strix-Core) adds GTK4 controls for monitoring, performance profiles, four-zone keyboard lighting and charging limits. Hardware controls are reviewed for the **ASUS ROG Strix G16 G614PH**. It is separate from the dotfiles and licensed **GPL-3.0-only**.
+
+Install the pinned **Strix Core v0.3.6** release when wanted:
+
+```bash
+sudo pacman -S --needed base-devel git
+bash ~/.local/share/chezmoi/scripts/install-strix-core.sh
+strix-core
+```
+
+For a full desktop setup including the app, run `bash ~/.local/share/chezmoi/scripts/bootstrap.sh --with-strix-core`. Without the flag, bootstrap skips it.
+
+The installer builds the verified source with `makepkg`; it does not start the app, enable autostart or change hardware. Enable M5/AURA bindings from Strix Core's **Hotkeys** page after installation. [Usage and supported controls](https://github.com/Dodzux/Strix-Core/blob/v0.3.6/USAGE.md).
 
 ---
 
@@ -134,7 +154,7 @@ The full bootstrap reads [packages/](packages/). App settings and package instal
 | `30-shell.txt` | Fish, Starship, Yazi, Git/GitHub CLI and command-line tools |
 | `40-terminals.txt` | Kitty and Ghostty |
 | `50-fonts.txt` | Noto, emoji, UI fonts and Cascadia Code Nerd Font |
-| `60-audio-media.txt` | PipeWire, WirePlumber, ALSA and media codecs |
+| `60-audio-media.txt` | PipeWire, WirePlumber, ALSA, CAVA, notification sounds and codecs |
 | `70-theming.txt` | GTK/Qt tooling, Kvantum, qt6ct and Tela icons |
 | `80-gpu-amd.txt` / `80-gpu-intel.txt` / `80-gpu-nvidia.txt` | Vendor-specific GPU packages |
 | `90-networking.txt` | NetworkManager, Bluetooth, OpenSSH and firewall tools |
@@ -234,7 +254,7 @@ git push
 | `Pictures/Wallpapers/` | Wallpapers and GIFs |
 | `.chezmoitemplates/` | Shared accent and cursor templates |
 | `packages/` | Package manifests |
-| `scripts/` | Full bootstrap, showcase capture, audits and snapshot helpers |
+| `scripts/` | Full bootstrap, optional Strix Core installer, showcase capture and audits |
 | `system/` | Greeter and supplemental settings |
 | `docs/reports/` | Detailed restore and verification records |
 | `assets/screenshots/` | Desktop preview |

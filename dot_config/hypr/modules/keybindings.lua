@@ -90,7 +90,7 @@ bind(m .. " + SHIFT + down",  hl.dsp.window.resize({ x = 0, y = 30, relative = t
 
 -- ▓▒░ KEYBOARD LAYOUT SWITCHING
 -- Cycles through input.kb_layout (modules/input.lua, per-host override in hosts/)
-bind(m .. " + K", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"), { description = "System: Switch keyboard layout" })
+bind(m .. " + K", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"), { locked = true, description = "System: Switch keyboard layout" })
 
 -- ▓▒░ CLIPBOARD MANAGEMENT
 -- SUPER+V opens clipboard history via the quickshell ClipboardPanel
@@ -151,6 +151,17 @@ bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SIN
 bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, description = "Media: Mute microphone" })
 bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%+ && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness up" })
 bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%- && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness down" })
+
+-- Laptop-specific command is supplied by hosts/Potat0Mac.lua.
+if vars.performanceMode then
+    bind("XF86Launch4", hl.dsp.exec_cmd(vars.performanceMode), { description = "System: Cycle performance mode (fan key)" })
+end
+
+-- The ASUS driver also handles the physical key. The helper persists and
+-- reapplies our choice on release, keeping it consistent after a login restore.
+if vars.fnLock then
+    bind("XF86Fn_Esc", hl.dsp.exec_cmd(vars.fnLock .. " toggle"), { release = true, locked = true, description = "System: Toggle Fn key mode" })
+end
 
 -- ▓▒░ MEDIA CONTROL
 bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true, description = "Media: Next track" })

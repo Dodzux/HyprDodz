@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import qs.services
 
 // Capture only while visible. Window and workspace moves use fresh native state.
 PanelWindow {
@@ -70,6 +71,11 @@ PanelWindow {
         opening = true;
         if (!fetch.running) fetch.running = true;
     }
+    function dismiss() {
+        if (content.item) content.item.cancel();
+        opening = false;
+        visible = false;
+    }
     function addWorkspaceTarget() {
         var id = 1;
         while (workspaceIds.indexOf(id) >= 0) id++;
@@ -81,6 +87,7 @@ PanelWindow {
         return Hyprland.toplevels.values.find(t => t.address.replace(/^0x/, "") === c.address.replace(/^0x/, "")) || null;
     }
     function iconFor(c) {
+        if(c.class === "org.quickshell" && c.title === "Planner")return "file://" + Quickshell.shellDir + "/assets/planner.svg";
         var entry = DesktopEntries.heuristicLookup(c.class === "org.yazi.fm" ? "yazi" : c.class || "");
         return entry && entry.icon ? (entry.icon.startsWith("/") ? entry.icon : "image://icon/" + entry.icon) : "image://icon/application-x-executable";
     }
@@ -156,7 +163,11 @@ PanelWindow {
     Rectangle {
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.35)
-        MouseArea { anchors.fill: parent; onClicked: { if (!overview.busy) overview.visible = false; } }
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: mouse => { if (mouse.button === Qt.RightButton && !overview.busy) overview.dismiss(); }
+        }
     }
     Loader {
         id: content
@@ -223,9 +234,7 @@ PanelWindow {
             Keys.onPressed: event => {
                 var shiftedNumber = (event.modifiers & Qt.ShiftModifier) ? "!@#$%^&*()".indexOf(event.text) : -1;
                 if (event.key === Qt.Key_Escape) {
-                    if (stage.pressedGesture) stage.cancel();
-                    else if (overview.query.length) overview.query = "";
-                    else overview.visible = false;
+                    overview.dismiss();
                 } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) overview.undoLast();
                 else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) overview.selectNext(1);
                 else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) overview.selectNext(-1);
@@ -267,7 +276,7 @@ PanelWindow {
                             text: overview.query
                             onTextEdited: overview.query = text
                             Text { anchors.fill: parent; text: "Search windows…  /"; color: Theme.subtext0; font: parent.font; visible: !parent.text && !parent.activeFocus }
-                            Keys.onEscapePressed: { overview.query = ""; stage.forceActiveFocus(); }
+                            Keys.onEscapePressed: overview.dismiss()
                             Keys.onReturnPressed: overview.focusWindow(overview.orderedWindows.find(c => c.address === overview.selectedAddress))
                             Keys.onDownPressed: { overview.selectNext(1); stage.forceActiveFocus(); }
                         }
@@ -296,9 +305,9 @@ PanelWindow {
 
             GridView {
                 id: cards
-                anchors.centerIn: parent
-                anchors.horizontalCenterOffset: stage.gap / 2
-                anchors.verticalCenterOffset: stage.gap / 2
+                // Animate placement, not the width used to calculate columns.
+                x: (parent.width - width) / 2 + stage.gap / 2
+                y: (parent.height - height) / 2 + stage.gap / 2
                 width: stage.cols * cellWidth
                 height: stage.rows * cellHeight
                 cellWidth: stage.tileW + stage.gap
@@ -322,8 +331,8 @@ PanelWindow {
                 }
                 displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                 move: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-                Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-                Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+                Behavior on x { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                     delegate: Column {
                         id: card
                         objectName: "overview-workspace-" + wsId
@@ -342,7 +351,7 @@ PanelWindow {
                                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 8 }
                                 spacing: 9
                                 Text { text: "⠿"; color: Theme.subtext0; font.family: Theme.fontMain; font.pixelSize: 15 }
-                                Text { text: "Workspace " + card.wsId; color: card.wsId === overview.activeWs ? Theme.accent : Theme.text; font.family: Theme.fontMain; font.pixelSize: 12; font.bold: true }
+                                Text { text: DesktopState.labels[String(card.wsId)] || ("Workspace " + card.wsId); textFormat:Text.PlainText; color: card.wsId === overview.activeWs ? Theme.accent : Theme.text; font.family: Theme.fontMain; font.pixelSize: 12; font.bold: true }
                                 Text { text: card.wsWindows.length + (card.wsWindows.length === 1 ? " app" : " apps"); color: Theme.subtext0; font.family: Theme.fontMain; font.pixelSize: 11 }
                             }
                             HoverHandler { id: headerHover; cursorShape: Qt.OpenHandCursor }
@@ -350,9 +359,13 @@ PanelWindow {
                                 anchors.fill: parent
                                 enabled: !overview.busy
                                 preventStealing: true
-                                onPressed: mouse => stage.begin("workspace", card.wsId, this, mouse)
-                                onPositionChanged: mouse => stage.update(this, mouse)
-                                onReleased: stage.finish()
+                                acceptedButtons:Qt.LeftButton | Qt.RightButton
+                                onPressed: mouse => {if(mouse.button===Qt.LeftButton)stage.begin("workspace",card.wsId,this,mouse);}
+                                onPositionChanged: mouse => {if(pressedButtons & Qt.LeftButton)stage.update(this,mouse);}
+                                onReleased: mouse => {
+                                    if(mouse.button===Qt.RightButton)root.renameWorkspace(card.wsId);
+                                    else stage.finish();
+                                }
                                 onCanceled: stage.cancel()
                             }
                         }
@@ -472,7 +485,7 @@ PanelWindow {
                 anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 38 }
                 spacing: 10
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: overview.busy ? "Moving…" : overview.message; color: Theme.accent; font.family: Theme.fontMain; font.pixelSize: 13 }
-                Text { text: "Drag a window to move · Drag a header to swap · Shift + 1–0 moves selected · Ctrl+Z undoes · Esc closes"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 11 }
+                Text { text: "Drag a window to move · Drag a header to swap · Shift + 1–0 moves selected · Ctrl+Z undoes · Esc / right-click background closes"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 11 }
             }
             Component.onCompleted: forceActiveFocus()
         }

@@ -8,6 +8,19 @@
 
 set -euo pipefail
 
+INSTALL_STRIX_CORE=false
+usage() {
+    echo "Usage: $(basename "$0") [--with-strix-core] [--help]"
+    echo 'Full desktop setup. Strix Core is installed only with --with-strix-core.'
+}
+for option in "$@"; do
+    case "$option" in
+        --with-strix-core) INSTALL_STRIX_CORE=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+done
+
 BOLD='\033[1m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -88,6 +101,16 @@ else
     log_warn "No GPU manifest for '$GPU', skipping driver install."
 fi
 log_success "All package categories installed successfully."
+
+if [ "$INSTALL_STRIX_CORE" = true ]; then
+    log_info "Installing optional Strix Core..."
+    if sudo pacman -S --needed --noconfirm base-devel git \
+        && bash "$REPO_DIR/scripts/install-strix-core.sh"; then
+        log_success "Strix Core installed."
+    else
+        log_warn "Strix Core install failed; retry scripts/install-strix-core.sh after setup."
+    fi
+fi
 
 # 5. Themes that aren't in the Arch repos, fetched from upstream. Skipped when
 #    already present, so re-runs don't touch a theme you've customised.

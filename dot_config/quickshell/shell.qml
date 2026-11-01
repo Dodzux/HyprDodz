@@ -15,6 +15,28 @@ import qs.services
 ShellRoot {
     id: root
 
+    readonly property string loginSession: Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || Quickshell.env("WAYLAND_DISPLAY")
+    FileView {
+        id: welcomeMarker
+        path: Quickshell.env("XDG_RUNTIME_DIR") + "/quickshell-welcome-session"
+        printErrors: false
+        atomicWrites: true
+        onLoaded: if (text().trim() !== root.loginSession)
+            welcomeDelay.restart()
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound)
+                welcomeDelay.restart();
+        }
+    }
+    Timer {
+        id: welcomeDelay
+        interval: 1600
+        onTriggered: {
+            welcomeMarker.setText(root.loginSession + "\n");
+            Quickshell.execDetached(["notify-send", "--app-name=Desktop", "--icon=" + Quickshell.shellDir + "/assets/welcome.svg", "--expire-time=6000", "--hint=string:category:system.login", "Welcome HyprUser", "This is ドッズ"]);
+        }
+    }
+
     // Reload feedback matches the desktop glass surface and wallpaper accent.
     PanelWindow {
         id: toast
@@ -32,15 +54,22 @@ ShellRoot {
         implicitHeight: content.implicitHeight + 40
         color: "transparent"
         exclusiveZone: -1
-        anchors { top: true; right: true }
-        margins { top: 71; right: 14 }
+        anchors {
+            top: true
+            right: true
+        }
+        margins {
+            top: 71
+            right: 14
+        }
         WlrLayershell.namespace: "quickshell-reload-toast"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         function showMessage(isError, message) {
             var target = preferredScreen || Quickshell.screens[0];
-            if (!target) return false;
+            if (!target)
+                return false;
             screen = target;
             lifetime.stop();
             failed = isError;
@@ -48,7 +77,8 @@ ShellRoot {
             copied = false;
             remaining = 1;
             shown = true;
-            if (!failed) lifetime.restart();
+            if (!failed)
+                lifetime.restart();
             return true;
         }
         function dismiss() {
@@ -63,10 +93,12 @@ ShellRoot {
         Connections {
             target: Quickshell
             function onReloadCompleted() {
-                if (toast.showMessage(false, "")) Quickshell.inhibitReloadPopup();
+                if (toast.showMessage(false, ""))
+                    Quickshell.inhibitReloadPopup();
             }
             function onReloadFailed(errorString) {
-                if (toast.showMessage(true, errorString)) Quickshell.inhibitReloadPopup();
+                if (toast.showMessage(true, errorString))
+                    Quickshell.inhibitReloadPopup();
             }
         }
 
@@ -92,12 +124,27 @@ ShellRoot {
             opacity: toast.shown ? 1 : 0
             scale: toast.shown ? 1 : 0.97
             transformOrigin: Item.TopRight
-            Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-            Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             ColumnLayout {
                 id: content
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14 }
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: 14
+                }
                 spacing: 10
                 RowLayout {
                     Layout.fillWidth: true
@@ -144,9 +191,20 @@ ShellRoot {
                         color: closeHover.hovered ? Theme.hoverBg : "transparent"
                         Accessible.role: Accessible.Button
                         Accessible.name: "Dismiss reload message"
-                        Text { anchors.centerIn: parent; text: "\u00d7"; color: Theme.subtext0; font.family: Theme.fontMain; font.pixelSize: 18 }
-                        HoverHandler { id: closeHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: toast.dismiss() }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\u00d7"
+                            color: Theme.subtext0
+                            font.family: Theme.fontMain
+                            font.pixelSize: 18
+                        }
+                        HoverHandler {
+                            id: closeHover
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                        TapHandler {
+                            onTapped: toast.dismiss()
+                        }
                     }
                 }
                 Text {
@@ -179,7 +237,12 @@ ShellRoot {
             }
             Rectangle {
                 visible: !toast.failed
-                anchors { left: parent.left; bottom: parent.bottom; leftMargin: 14; bottomMargin: 6 }
+                anchors {
+                    left: parent.left
+                    bottom: parent.bottom
+                    leftMargin: 14
+                    bottomMargin: 6
+                }
                 width: Math.max(0, (card.width - 28) * toast.remaining)
                 height: 2
                 radius: 1
@@ -189,16 +252,15 @@ ShellRoot {
         }
     }
 
-
-
-    signal togglePowerMenu()
-    signal toggleBarFocus()
-    signal toggleCalendar()
-    signal toggleWallpaperSelector()
-    signal toggleNotifications()
-    signal toggleCheatsheet()
+    signal togglePowerMenu
+    signal toggleBarFocus
+    signal toggleCalendar
+    signal toggleWallpaperSelector
+    signal toggleTasks
+    signal toggleNotifications
+    signal toggleCheatsheet
     signal toggleNetwork(var scr, real anchorX)
-    signal toggleOverview()
+    signal toggleOverview
 
     // Notifications that arrived since the history panel was last opened —
     // the count on the bar bell.
@@ -223,7 +285,8 @@ ShellRoot {
      * @returns {var} Screen object or null if not found.
      */
     function getFocusedScreen() {
-        if (!Hyprland.focusedMonitor) return null;
+        if (!Hyprland.focusedMonitor)
+            return null;
         var name = Hyprland.focusedMonitor.name;
         return Quickshell.screens.find(scr => scr.name === name) || null;
     }
@@ -239,16 +302,37 @@ ShellRoot {
             return;
         }
         var scr = getFocusedScreen();
-        if (scr) panel.screen = scr;
+        if (scr)
+            panel.screen = scr;
         panel.visible = true;
     }
 
     onTogglePowerMenu: togglePanel(powerMenuPanel)
-    onToggleCalendar: togglePanel(calendarPanel)
+    onToggleCalendar: {
+        tasksPanel.visible = false;
+        togglePanel(calendarPanel);
+    }
     onToggleWallpaperSelector: wallpaperSelectorPanel.toggle(getFocusedScreen())
+    onToggleTasks: {
+        notificationCenter.visible = false;
+        calendarPanel.visible = false;
+        togglePanel(tasksPanel);
+    }
+    function openPlanner() {
+        tasksPanel.visible = false;
+        plannerWindow.open(getFocusedScreen());
+    }
+    function renameWorkspace(id) {
+        workspaceRename.open(getFocusedScreen(), id);
+    }
+    function showTrayMenu(scr, item, x) {
+        trayMenu.open(scr, item, x);
+    }
     onToggleNotifications: {
+        tasksPanel.visible = false;
         togglePanel(notificationCenter);
-        if (notificationCenter.visible) unreadNotifications = 0;
+        if (notificationCenter.visible)
+            unreadNotifications = 0;
     }
     onToggleOverview: overviewPanel.toggle(getFocusedScreen())
     onToggleCheatsheet: cheatsheetPanel.toggle(getFocusedScreen())
@@ -288,7 +372,7 @@ ShellRoot {
         onPressed: root.toggleCheatsheet()
     }
 
-    // ▓▒░ NOTIFICATION HISTORY — SUPER+comma (also the bar bell / right-click clock)
+    // ▓▒░ NOTIFICATION HISTORY — SUPER+comma and the bar bell
     GlobalShortcut {
         appid: "quickshell"
         name: "toggle-notifications"
@@ -308,8 +392,10 @@ ShellRoot {
     Pw.PwObjectTracker {
         objects: {
             var list = [];
-            if (Pw.Pipewire.defaultAudioSink) list.push(Pw.Pipewire.defaultAudioSink);
-            if (Pw.Pipewire.defaultAudioSource) list.push(Pw.Pipewire.defaultAudioSource);
+            if (Pw.Pipewire.defaultAudioSink)
+                list.push(Pw.Pipewire.defaultAudioSink);
+            if (Pw.Pipewire.defaultAudioSource)
+                list.push(Pw.Pipewire.defaultAudioSource);
             return list;
         }
     }
@@ -336,13 +422,15 @@ ShellRoot {
         // tracked = true is what keeps a notification alive past this handler.
         // Without it quickshell destroys the object on return — there was no
         // history, and every later dismiss() threw "is not a function".
-        onNotification: (notification) => {
+        onNotification: notification => {
             notification.tracked = true;
-            if (notification.lastGeneration) return;
+            if (notification.lastGeneration)
+                return;
             var times = JSON.parse(notificationState.timesJson);
             times[notification.id] = new Date().toISOString();
             notificationState.timesJson = JSON.stringify(times);
-            if (!notification.transient && !notificationCenter.visible) root.unreadNotifications++;
+            if (!notification.transient && !notificationCenter.visible)
+                root.unreadNotifications++;
         }
     }
 
@@ -362,7 +450,9 @@ ShellRoot {
     }
 
     // ▓▒░ VOLUME / MIC OSD — follows PipeWire, whatever changed the level
-    VolumeOSD { id: volumeOsd }
+    VolumeOSD {
+        id: volumeOsd
+    }
 
     // ▓▒░ APP LAUNCHER — SUPER+A (GlobalShortcut registered inside AppLauncher.qml)
     // Replaces: rofi -show drun
@@ -394,6 +484,19 @@ ShellRoot {
 
     WallpaperSelector {
         id: wallpaperSelectorPanel
+    }
+
+    TasksPanel {
+        id: tasksPanel
+    }
+    PlannerWindow {
+        id: plannerWindow
+    }
+    WorkspaceRename {
+        id: workspaceRename
+    }
+    TrayMenu {
+        id: trayMenu
     }
 
     NotificationCenter {

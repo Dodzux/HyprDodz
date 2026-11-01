@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
 import qs.services
@@ -9,6 +10,49 @@ import qs.services
 Row {
     id: workspaces
     spacing: 0
+    required property var parentWindow
+    property int editingId:0
+    property var nameEditor:null
+    property bool keyboardFocusBeforeEdit:false
+    function beginName(id,editor) {
+        if(!DesktopState.ready || editingId===id)return;
+        hidePeek();
+        if(!editingId)keyboardFocusBeforeEdit=parentWindow.isKeyboardFocused;
+        editingId=0;nameEditor=null;
+        editor.text=DesktopState.labels[String(id)] || "";
+        nameEditor=editor;editingId=id;parentWindow.workspaceEditing=true;parentWindow.isKeyboardFocused=true;
+        Qt.callLater(()=>{if(editingId===id){editor.forceActiveFocus();editor.cursorPosition=editor.length;}});
+    }
+    function endName(commit) {
+        if(!editingId)return;
+        var id=editingId,editor=nameEditor;
+        editingId=0;nameEditor=null;
+        if(commit)DesktopState.renameWorkspace(id,editor.text);
+        parentWindow.workspaceEditing=false;
+        parentWindow.isKeyboardFocused=keyboardFocusBeforeEdit;
+    }
+    // Input-only dismissal surfaces: no visible popup and no hover-driven exit.
+    Variants {
+        model:workspaces.editingId?Quickshell.screens:[]
+        PanelWindow {
+            id:outsideClick;required property var modelData
+            screen:modelData;color:"transparent";exclusiveZone:-1
+            anchors {top:true;bottom:true;left:true;right:true}
+            WlrLayershell.layer:WlrLayer.Overlay
+            WlrLayershell.namespace:"quickshell-workspace-edit-dismiss"
+            WlrLayershell.keyboardFocus:WlrKeyboardFocus.None
+            mask:Region {
+                width:outsideClick.width;height:outsideClick.height
+                Region {
+                    intersection:Intersection.Subtract
+                    x:workspaces.parentWindow.margins.left;y:workspaces.parentWindow.margins.top
+                    width:outsideClick.modelData.name===workspaces.parentWindow.screen.name?workspaces.parentWindow.width:0
+                    height:workspaces.parentWindow.height
+                }
+            }
+            MouseArea {anchors.fill:parent;acceptedButtons:Qt.AllButtons;onPressed:event=>{event.accepted=true;workspaces.endName(false);}}
+        }
+    }
     property var peekClients: []
     property int requestedPeek: 0
     property int activePeek: 0
@@ -23,6 +67,7 @@ Row {
         requestedPeek = 0; activePeek = 0;
     }
     function beginPeek(id, item) {
+        if(editingId)return;
         hoveredWorkspaceId = id;
         closePeek.stop();
         if (!occupied[String(id)]) { hidePeek(); return; }
@@ -150,11 +195,24 @@ Row {
         return id <= 5 || occupied[String(id)] === true || focusedName === String(id);
     }
 
+    function scrollWorkspace(direction) {
+        var shown = [];
+        for (var id = 1; id <= 10; id++) {
+            if (isShown(id)) shown.push(id);
+        }
+        if (!shown.length) return;
+        var at = shown.indexOf(Number(focusedName));
+        var next = at < 0 ? (direction > 0 ? 0 : shown.length - 1)
+            : (at + direction + shown.length) % shown.length;
+        goTo(shown[next]);
+    }
+
     // A fresh quickshell only learns about windows from open/close events, so
     // windows that already existed at (re)start never marked their workspace
     // occupied. Pull the current client list once up front.
 
     function goTo(target) {
+        if(editingId)endName(false);
         hidePeek();
         Hyprland.dispatch("hl.dsp.focus({ workspace = " + target + " })");
     }
@@ -186,12 +244,14 @@ Row {
                 id: wsRect
 
                 readonly property int wsId: slot.wsId
+                readonly property bool editing:workspaces.editingId===wsId
+                objectName:"workspace-pill-"+wsId
                 readonly property bool isFocused: workspaces.focusedName === String(wsId)
                 readonly property bool isOccupied: workspaces.occupied[String(wsId)] === true
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: isFocused ? Math.max(38, wsLabel.implicitWidth + 18) : 16
+                width: editing ? Math.min(180,Math.max(60,wsNameEditor.implicitWidth+18)) : (isFocused ? Math.min(160,Math.max(38, wsLabel.implicitWidth + 18)) : 16)
                 height: 28
                 radius: Theme.widgetRadius
                 antialiasing: true
@@ -208,13 +268,13 @@ Row {
                 }
                 // Highlight when focused, hovered, or occupied
                 color: {
-                    if (isFocused) return Theme.bgSelection;
+                    if (isFocused || editing) return Theme.bgSelection;
                     // Hover / keyboard focus: the bar's quiet glass lift (see BarItem)
                 if (wsHover.hovered || wsRect.activeFocus) return Qt.rgba(1, 1, 1, 0.08);
                     if (isOccupied) return "transparent";
                     return "transparent";
                 }
-                border.color: isFocused || wsRect.activeFocus ? Theme.accent
+                border.color: isFocused || editing || wsRect.activeFocus ? Theme.accent
                         : wsHover.hovered ? Qt.rgba(1, 1, 1, 0.10)
                         : isOccupied ? Theme.borderMuted : "transparent"
                 border.width: 1
@@ -231,15 +291,19 @@ Row {
                 Rectangle {
                     anchors.centerIn: parent
                     width: 5; height: 5; radius: 2.5
-                    visible: !wsRect.isFocused
+                    visible: !wsRect.isFocused && !wsRect.editing
                     color: wsRect.isOccupied ? Theme.accent : Theme.borderMuted
                     Behavior on color { ColorAnimation { duration: Theme.motionFast } }
                 }
                 Text {
                     id: wsLabel
                     anchors.centerIn: parent
-                    visible: wsRect.isFocused
+                    width:Math.min(implicitWidth,parent.width-14)
+                    elide:Text.ElideRight
+                    horizontalAlignment:Text.AlignHCenter
+                    visible: wsRect.isFocused && !wsRect.editing
                     text: DesktopState.labels[String(wsRect.wsId)] || wsRect.wsId.toString()
+                    textFormat:Text.PlainText
                     color: (wsRect.isFocused || wsHover.hovered || wsRect.isOccupied) ? Theme.text : Theme.subtext0
 
                     font.family: Theme.fontMain
@@ -248,17 +312,34 @@ Row {
                     renderType: Text.NativeRendering
                 }
 
+                TextInput {
+                    id:wsNameEditor;readonly property bool windowActive:Window.active
+                    objectName:"workspace-name-input-"+wsRect.wsId
+                    anchors.centerIn:parent;width:parent.width-14
+                    visible:wsRect.editing;enabled:DesktopState.ready;maximumLength:24;clip:true;selectByMouse:true
+                    color:Theme.text;selectionColor:Theme.accent;selectedTextColor:Theme.onAccent
+                    font.family:Theme.fontMain;font.pixelSize:12;font.weight:Font.Bold
+                    horizontalAlignment:TextInput.AlignHCenter
+                    onActiveFocusChanged:if(!activeFocus && wsRect.editing)Qt.callLater(()=>{if(wsRect.editing)wsNameEditor.forceActiveFocus();})
+                    Keys.onReturnPressed:event=>{workspaces.endName(true);event.accepted=true;}
+                    Keys.onEnterPressed:event=>{workspaces.endName(true);event.accepted=true;}
+                    Keys.onEscapePressed:event=>{workspaces.endName(false);event.accepted=true;}
+                    Text {anchors.centerIn:parent;visible:!wsNameEditor.text;text:String(wsRect.wsId);color:Theme.subtext0;font:wsNameEditor.font}
+                }
                 MouseArea {
                     anchors.fill: parent
+                    enabled:!wsRect.editing
                     cursorShape: Qt.PointingHandCursor
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: workspaces.goTo(wsRect.wsId)
-                    // Same direction as SUPER+scroll in keybindings.lua. This used
-                    // to exec `hyprctl dispatch workspace e-1` — hyprlang syntax,
-                    // which the Lua config rejects ("')' expected near 'e'").
-                    onWheel: (wheel) => {
-                        if (wheel.angleDelta.y > 0) workspaces.goTo('"e-1"');
-                        else if (wheel.angleDelta.y < 0) workspaces.goTo('"e+1"');
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: mouse => {
+                        if(mouse.button===Qt.RightButton){workspaces.beginName(wsRect.wsId,wsNameEditor);}
+                        else workspaces.goTo(wsRect.wsId);
+                    }
+                    // Follow the pills shown by this bar, including empty 1–5.
+                    onWheel: wheel => {
+                        var delta = wheel.angleDelta.y || wheel.pixelDelta.y;
+                        if (delta) workspaces.scrollWorkspace(delta > 0 ? -1 : 1);
+                        wheel.accepted = true;
                     }
                 }
             }

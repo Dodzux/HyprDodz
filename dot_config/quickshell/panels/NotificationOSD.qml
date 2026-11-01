@@ -31,24 +31,39 @@ Item {
         popups = popups.filter(p => p !== notification);
     }
 
-    function playSound(notification) {
+    function soundCategory(notification) {
+        if (notification.urgency === NotificationUrgency.Critical) return "warning";
+        var category = String((notification.hints || {})["category"] || "").toLowerCase();
+        var app = String(notification.appName || "").toLowerCase();
+        // Welcome uses Warm Keys; reserve the old tone for actual system alerts.
+        if (category === "system.login") return "messages";
+        if (/^(transfer\.complete|job\.complete|complete)/.test(category)) return "complete";
+        if (/^device/.test(category)) return "devices";
+        if (/^(control|x-hypr\.control)/.test(category) || /fn key|fn mode|performance|brightness|volume/.test(app)) return "controls";
+        if (/^system/.test(category) || /hyprland|cachyos|update|system/.test(app)) return "system";
+        return "messages";
+    }
+    function soundCommand(notification) {
         var hints = notification.hints || {};
-        if (hints["suppress-sound"])
-            return;
+        if (hints["suppress-sound"]) return [];
         var app = (notification.appName || "").toLowerCase();
-        if (selfSoundingApps.some(a => app.includes(a)))
-            return;
-
-        // canberra resolves XDG sound-theme names, so an app's own sound-name
-        // hint works as well as a file path.
+        if (selfSoundingApps.some(a => app.includes(a))) return [];
         var args = ["canberra-gtk-play", "--description=notification"];
-        if (hints["sound-file"]) {
-            args.push("-f", String(hints["sound-file"]).replace(/^file:\/\//, ""));
-        } else {
-            var critical = notification.urgency === NotificationUrgency.Critical;
-            args.push("-i", hints["sound-name"] || (critical ? "bell" : "message-new-instant"));
+        if (hints["sound-file"]) args.push("-f", String(hints["sound-file"]).replace(/^file:\/\//, ""));
+        else if (hints["sound-name"]) args.push("-i", String(hints["sound-name"]));
+        else {
+            var category = soundCategory(notification);
+            if (category === "warning") args.push("-i", "bell");
+            else if (category === "system") args.push("-i", "message-new-instant");
+            else args.push("-f", Quickshell.shellDir + "/assets/sounds/warm-" + category + ".wav");
         }
-        Quickshell.execDetached(args);
+        return args;
+    }
+    function playSound(notification) {
+        if (DndService.isEnabled && notification.urgency !== NotificationUrgency.Critical) return;
+        var args = soundCommand(notification);
+        // A stalled audio device must not leave notification players running indefinitely.
+        if (args.length) Quickshell.execDetached(["timeout", "--signal=TERM", "--kill-after=1s", "3s"].concat(args));
     }
 
     Connections {
@@ -151,9 +166,15 @@ Item {
                     }
                     Connections {
                         target: popupCard.modelData
-                        function onSummaryChanged() { popupCard.restartExpiry(); }
-                        function onBodyChanged() { popupCard.restartExpiry(); }
+                        function onSummaryChanged() { popupCard.restartExpiry(); replacementSound.restart(); }
+                        function onBodyChanged() { popupCard.restartExpiry(); replacementSound.restart(); }
                         function onExpireTimeoutChanged() { popupCard.restartExpiry(); }
+                    }
+                    // Fn/performance changes replace one notification object. Coalesce
+                    // its property updates so each mode change gets one short tone.
+                    Timer {
+                        id: replacementSound; interval: 80
+                        onTriggered: if (popupCard.modelData && osdRoot.soundCategory(popupCard.modelData) === "controls") osdRoot.playSound(popupCard.modelData)
                     }
                     Timer {
                         id: expiry

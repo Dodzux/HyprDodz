@@ -192,12 +192,124 @@ def palettes(cache):
     return result
 
 
+def wallpaper_assets(cache, directory=None):
+    """Publish the cheap inventory first, then fill immutable preview assets."""
+    directory = directory or HOME / "Pictures/Wallpapers"
+    extractor = HOME / ".config/hypr/scripts/sync_border.py"
+    cache.mkdir(parents=True, exist_ok=True)
+    paths = [p for p in directory.iterdir() if p.is_file()
+             and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".gif"}]
+    paths.sort(key=lambda p: (re.sub(r"^\d+[\s._-]+", "", p.name.casefold()), p.name.casefold(), str(p)))
+    inventory, missing = [], []
+    for path in paths:
+        stat = path.stat()
+        source_id = f"{path.resolve()}:{stat.st_mtime_ns}:{stat.st_size}"
+        identity = f"{source_id}:{extractor.stat().st_mtime_ns}:v1"
+        palette_file = cache / (hashlib.sha256(identity.encode()).hexdigest() + ".json")
+        preview_version = ":384x216-gif-rgb-v2" if path.suffix.lower() == ".gif" else ":384x216-v1"
+        thumbnail = cache / ("thumb-" + hashlib.sha256((source_id + preview_version).encode()).hexdigest() + ".jpg")
+        palette = None
+        try:
+            saved = json.loads(palette_file.read_text())
+            if isinstance(saved, dict) and saved.get("identity") == identity and all(k in saved for k in ("accent", "swatches")):
+                palette = saved
+        except (OSError, ValueError, TypeError):
+            pass
+        item = {"path": str(path), "name": path.name,
+                "accent": palette["accent"] if palette else "#e5e5e5",
+                "swatches": palette["swatches"] if palette else [],
+                "thumbnail": thumbnail.as_uri() if thumbnail.is_file() else ""}
+        inventory.append(item)
+        if not item["thumbnail"] or palette is None:
+            missing.append((path, item, thumbnail, palette_file, identity, palette))
+    yield {"type": "list", "items": inventory}
+
+    def build(job):
+        path, item, thumbnail, palette_file, identity, palette = job
+        result = dict(item)
+        try:
+            from PIL import Image, ImageOps, ImageStat
+            if not thumbnail.is_file():
+                with Image.open(path) as original:
+                    original.seek(0)  # Animated wallpaper previews stay static.
+                    # Palette images otherwise force nearest-neighbour resizing.
+                    image = ImageOps.exif_transpose(original).convert("RGB")
+                    image.thumbnail((384, 216), Image.Resampling.BILINEAR, reducing_gap=3.0)
+                    if original.format == "GIF":
+                        brightness = sum(ImageStat.Stat(image).mean) / 3
+                        if brightness < 1.5:
+                            for frame in (1, 4, 8, 12, 16, 24):
+                                try:
+                                    original.seek(frame)
+                                except EOFError:
+                                    break
+                                candidate = original.convert("RGB")
+                                candidate.thumbnail((384, 216), Image.Resampling.BILINEAR, reducing_gap=3.0)
+                                candidate_brightness = sum(ImageStat.Stat(candidate).mean) / 3
+                                if candidate_brightness > brightness:
+                                    image, brightness = candidate, candidate_brightness
+                                if brightness >= 3:
+                                    break
+                    temporary = None
+                    try:
+                        with tempfile.NamedTemporaryFile(dir=cache, suffix=".jpg", delete=False) as stream:
+                            temporary = Path(stream.name)
+                            image.save(stream, format="JPEG", quality=84)
+                        os.replace(temporary, thumbnail)
+                    finally:
+                        if temporary is not None:
+                            temporary.unlink(missing_ok=True)
+            result["thumbnail"] = thumbnail.as_uri()
+            if palette is None:
+                spec = importlib.util.spec_from_file_location("desktop_color_reader", extractor)
+                reader = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(reader)
+                accent, _ = reader.extract_color(str(path))
+                with Image.open(path) as original:
+                    original.seek(0)
+                    image = original.convert("RGB")
+                    image.thumbnail((96, 96))
+                    quantized = image.quantize(colors=6)
+                    colors = quantized.getpalette()
+                    swatches = ["#" + "".join(f"{v:02x}" for v in colors[index * 3:index * 3 + 3])
+                                for _, index in sorted(quantized.getcolors(), reverse=True)]
+                result.update(accent="#" + accent, swatches=["#" + accent] + [c for c in swatches if c != "#" + accent][:4])
+                saved = dict(result, identity=identity)
+                temporary = None
+                try:
+                    with tempfile.NamedTemporaryFile(mode="w", dir=cache, delete=False) as stream:
+                        json.dump(saved, stream)
+                        temporary = Path(stream.name)
+                    os.replace(temporary, palette_file)
+                finally:
+                    if temporary is not None:
+                        temporary.unlink(missing_ok=True)
+        except (OSError, ValueError, KeyError) as error:
+            result["error"] = str(error)
+        return result
+
+    # Bound peak decode memory and CPU, and let Qt show each preview as it arrives.
+    if missing:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            for future in as_completed([pool.submit(build, job) for job in missing]):
+                yield {"type": "asset", "item": future.result()}
+    yield {"type": "done"}
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "overview", "overview-action", "focus-window"])
+    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "wallpapers", "overview", "overview-action", "focus-window"])
     parser.add_argument("--cache", type=Path, default=HOME / ".cache/quickshell/wallpaper-palettes")
     parser.add_argument("--request", help="Validated overview action as JSON")
     args = parser.parse_args()
+    if args.mode == "wallpapers":
+        try:
+            for update in wallpaper_assets(args.cache):
+                print(json.dumps(update), flush=True)
+        except (ValueError, OSError) as error:
+            print(json.dumps({"type": "error", "message": str(error)}), flush=True)
+        return
     try:
         if args.mode in ("overview-action", "focus-window"):
             request = json.loads(args.request or "{}")

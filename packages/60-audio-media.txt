@@ -1,5 +1,7 @@
 alsa-plugins
 alsa-utils
+cava
+libcanberra
 gst-libav
 gst-plugin-pipewire
 gst-plugins-bad
@@ -8,4 +10,5 @@ gst-plugin-va
 pipewire-alsa
 pipewire-pulse
 sof-firmware
+sound-theme-freedesktop
 wireplumber

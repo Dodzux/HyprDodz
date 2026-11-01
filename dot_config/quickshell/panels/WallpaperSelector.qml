@@ -6,7 +6,6 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
-import qs.services
 
 PanelWindow {
     id: wallpaperWindow
@@ -26,6 +25,42 @@ PanelWindow {
     
 
     property var wallpapers: []
+    property var assets: ({})
+    property bool loading: false
+    property string loadingError: ""
+    property real revealProgress: 0
+    function refresh() {
+        if (findProc.running) return;
+        loading = true;
+        loadingError = "";
+        findProc.running = true;
+    }
+    function acceptUpdate(line) {
+        try {
+            var update = JSON.parse(line);
+            if (update.type === "list") {
+                var nextAssets = {};
+                var entries = update.items.map(item => {
+                    nextAssets[item.path] = item;
+                    return {path: item.path, name: item.name};
+                });
+                assets = nextAssets;
+                // Asset arrivals never rebuild the grid or reset keyboard selection.
+                if (JSON.stringify(entries) !== JSON.stringify(wallpapers)) wallpapers = entries;
+            } else if (update.type === "asset") {
+                var next = Object.assign({}, assets);
+                next[update.item.path] = update.item;
+                assets = next;
+            } else if (update.type === "done") loading = false;
+            else if (update.type === "error") { loading = false; loadingError = update.message; }
+        } catch (error) { console.warn("Wallpaper preview:", error); }
+    }
+    Timer { interval: 700; running: true; onTriggered: wallpaperWindow.refresh() }
+    onVisibleChanged: {
+        if (visible) { reveal.restart(); searchInput.forceActiveFocus(); }
+        else { reveal.stop(); revealProgress = 0; }
+    }
+    NumberAnimation { id: reveal; target: wallpaperWindow; property: "revealProgress"; from: 0; to: 1; duration: Theme.motionNormal; easing.type: Easing.OutCubic }
     property var filteredWallpapers: {
         var q = searchInput.text.toLowerCase().trim()
         return wallpapers.filter(function(item) {
@@ -42,13 +77,12 @@ PanelWindow {
 
     Process {
         id: findProc
-        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "palettes",
+        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "wallpapers",
                   "--cache", Quickshell.env("HOME") + "/.cache/quickshell/wallpaper-palettes"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try { wallpaperWindow.wallpapers = JSON.parse(this.text); }
-                catch (error) { console.warn("Wallpaper palette:", error); }
-            }
+        stdout: SplitParser { onRead: line => wallpaperWindow.acceptUpdate(line) }
+        onExited: exitCode => {
+            wallpaperWindow.loading = false;
+            if (exitCode !== 0) wallpaperWindow.loadingError = "Could not load wallpaper previews";
         }
     }
 
@@ -61,7 +95,7 @@ PanelWindow {
         id: panelCard
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 840
-        height: Math.min(600, Math.max(160, 12 + headerBox.height + 12 + gridList.contentHeight + 12))
+        height: wallpaperWindow.loading && wallpaperWindow.wallpapers.length === 0 ? 600 : Math.min(600, Math.max(160, 12 + headerBox.height + 12 + Math.ceil(wallpaperWindow.filteredWallpapers.length / 4) * gridList.cellHeight + 12))
         anchors.centerIn: parent
 
         color: Theme.glassBg
@@ -70,12 +104,10 @@ PanelWindow {
         border.color: Theme.glassBorder
         border.width: 1
 
-        opacity: wallpaperWindow.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+        opacity: wallpaperWindow.revealProgress
 
         transform: Translate {
-            y: wallpaperWindow.visible ? 0 : 16
-            Behavior on y { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+            y: (1 - wallpaperWindow.revealProgress) * 12
         }
 
         MouseArea { 
@@ -117,10 +149,10 @@ PanelWindow {
                     }
 
                     Keys.onEscapePressed: wallpaperWindow.visible = false
-                    Keys.onDownPressed:   gridList.moveCurrentIndexDown()
-                    Keys.onUpPressed:     gridList.moveCurrentIndexUp()
-                    Keys.onRightPressed:  gridList.moveCurrentIndexRight()
-                    Keys.onLeftPressed:   gridList.moveCurrentIndexLeft()
+                    Keys.onDownPressed: gridList.moveCurrentIndexDown()
+                    Keys.onUpPressed: gridList.moveCurrentIndexUp()
+                    Keys.onRightPressed: gridList.moveCurrentIndexRight()
+                    Keys.onLeftPressed: gridList.moveCurrentIndexLeft()
                     Keys.onReturnPressed: {
                         if (wallpaperWindow.filteredWallpapers.length > 0) {
                             var entry = wallpaperWindow.filteredWallpapers[gridList.currentIndex]
@@ -154,15 +186,30 @@ PanelWindow {
                 objectProp: "path"
                 onValuesChanged: Qt.callLater(() => { gridList.currentIndex = values.length ? 0 : -1; })
             }
-            add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
-            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            add: Transition { enabled: !wallpaperWindow.loading; NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
             displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
             currentIndex: 0
+            reuseItems: true
+            cacheBuffer: cellHeight
             clip: true
+            // Keep GridView's tracker for smooth automatic scrolling.
             highlightMoveDuration: Theme.launcherSelectionDuration
-            highlight: Item {
+            highlight: Item { width: gridList.cellWidth; height: gridList.cellHeight }
+
+            // Match AppLauncher's fixed-duration selection motion. GridView
+            // has no highlightMoveVelocity property, so animate its visual
+            // separately in content coordinates while retaining native scrolling.
+            Item {
+                id: selectionBackground
+                visible: !!gridList.currentItem
+                parent: gridList.contentItem
+                z: 0
                 width: gridList.cellWidth
                 height: gridList.cellHeight
+                x: gridList.currentItem ? gridList.currentItem.x : 0
+                y: gridList.currentItem ? gridList.currentItem.y : 0
+                Behavior on x { SmoothedAnimation { duration: Theme.launcherSelectionDuration; velocity: -1 } }
+                Behavior on y { SmoothedAnimation { duration: Theme.launcherSelectionDuration; velocity: -1 } }
                 Rectangle {
                     anchors { fill: parent; margins: 6 }
                     radius: 10
@@ -174,7 +221,7 @@ PanelWindow {
                     Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                 }
             }
-            
+
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
                 visible: gridList.contentHeight > gridList.height
@@ -195,6 +242,8 @@ PanelWindow {
                 
                 required property var modelData
                 required property int index
+                readonly property var asset: wallpaperWindow.assets[modelData.path] || ({})
+                GridView.onReused: wallpaperTile.opacity = 1
                 readonly property bool highlighted: gridList.currentIndex === index || itemHover.hovered
 
                 Rectangle {
@@ -204,6 +253,7 @@ PanelWindow {
                     border.color: "transparent"
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                     
                     MouseArea {
                         anchors.fill: parent
@@ -219,16 +269,18 @@ PanelWindow {
                             Layout.fillHeight: true
                             Layout.margins: 6
                             radius: 6
-                            color: "transparent"
+                            color: Theme.hoverBg
                             clip: true
                             
                             Image {
                                 anchors.fill: parent
-                                source: "file://" + modelData.path
+                                source: wallpaperTile.asset.thumbnail || ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: true
-                                sourceSize: Qt.size(240, 135)
+                                sourceSize: Qt.size(384, 216)
+                                opacity: status === Image.Ready ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: Theme.motionFast; easing.type: Easing.OutCubic } }
                             }
                         }
                         
@@ -236,7 +288,7 @@ PanelWindow {
                             Layout.alignment: Qt.AlignHCenter
                             spacing: 4
                             Repeater {
-                                model: wallpaperTile.modelData.swatches || []
+                                model: wallpaperTile.asset.swatches || []
                                 Rectangle {
                                     required property var modelData
                                     required property int index
@@ -264,14 +316,17 @@ PanelWindow {
                         }
                     }
 
-                    HoverHandler { id: itemHover }
+                    HoverHandler {
+                        id: itemHover
+                        onHoveredChanged: if (hovered) gridList.currentIndex = wallpaperTile.index
+                    }
 
                 }
             }
             
             Text {
                 anchors.centerIn: parent
-                text: searchInput.text.length > 0 ? "No wallpapers match your search" : "No wallpapers found"
+                text: wallpaperWindow.loadingError || (wallpaperWindow.loading ? "Loading wallpapers…" : searchInput.text.length > 0 ? "No wallpapers match your search" : "No wallpapers found")
                 color: Theme.subtext0
                 font.family: Theme.fontMain
                 font.pixelSize: 13
@@ -291,9 +346,7 @@ PanelWindow {
             wallpaperWindow.screen = scr;
         }
         searchInput.text = "";
-        if (wallpaperWindow.wallpapers.length === 0 && !findProc.running) {
-            findProc.running = true;
-        }
+        refresh();
         wallpaperWindow.visible = true;
     }
 }

@@ -90,6 +90,8 @@ ListView {
         }
         if (!id) return "application-x-executable";
 
+        // Planner shares the shell's appId, so identify this owned window by its exact title.
+        if (id === "org.quickshell" && title === "Planner") return Quickshell.shellDir + "/assets/planner.svg";
         if (id.includes("antigravity")) return "";
 
         for (let i = 0; i < appIdOverrides.length; i++) {
@@ -167,7 +169,7 @@ ListView {
                 source: {
                     const id = (modelData ? modelData.appId || "" : "").toLowerCase();
                     const isTerminal = taskbar.terminalAppIds.some(t => id.includes(t));
-                    return taskbar.getAppIcon(isTerminal && modelData ? modelData.title : "", modelData ? modelData.appId : "");
+                    return taskbar.getAppIcon((isTerminal || id === "org.quickshell") && modelData ? modelData.title : "", modelData ? modelData.appId : "");
                 }
 
                 // Pacman remains yellow; pellets follow the live theme accent.

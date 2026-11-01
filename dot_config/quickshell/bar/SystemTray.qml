@@ -31,28 +31,19 @@ Row {
                 fillMode: Image.PreserveAspectFit
             }
 
-            QsMenuAnchor {
-                id: menuAnchor
-                menu: modelData.menu
-                anchor.window: systemTrayWidget.parentWindow
-            }
-
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 cursorShape: Qt.PointingHandCursor
 
                 onClicked: (mouse) => {
-                    if (mouse.button !== Qt.RightButton) {
+                    if (mouse.button !== Qt.RightButton && !modelData.onlyMenu) {
                         modelData.activate();
                         return;
                     }
                     if (modelData.hasMenu) {
-                        // Map coordinates to parentWindow
-                        var pos = parent.mapToItem(systemTrayWidget.parentWindow.contentItem, mouse.x, mouse.y);
-                        menuAnchor.anchor.rect.x = pos.x;
-                        menuAnchor.anchor.rect.y = pos.y;
-                        menuAnchor.open();
+                        var pos=trayItem.mapToItem(systemTrayWidget.parentWindow.contentItem,trayItem.width/2,0);
+                        root.showTrayMenu(systemTrayWidget.parentWindow.screen,modelData,pos.x);
                     }
                 }
             }

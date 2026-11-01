@@ -45,7 +45,7 @@ hl.layer_rule({
 
 hl.layer_rule({
     name  = "blur-quickshell-panels",
-    match = { namespace = "^(quickshell-launcher|quickshell-clipboard|quickshell-screenshot|notification-osd|quickshell-wallpaper-selector|quickshell-shortcuts|quickshell-notifications|quickshell-osd|quickshell-overview|quickshell-network|quickshell-reload-toast)$" },
+    match = { namespace = "^(quickshell-launcher|quickshell-clipboard|quickshell-screenshot|notification-osd|quickshell-wallpaper-selector|quickshell-shortcuts|quickshell-notifications|quickshell-osd|quickshell-overview|quickshell-network|quickshell-reload-toast|quickshell-tasks|quickshell-workspace-name|quickshell-tray-menu)$" },
     blur  = true,
     blur_popups = true,
     ignore_alpha = 0.2,
@@ -136,4 +136,22 @@ hl.window_rule({
     float  = true,
     center = true,
     size   = { 1000, 640 },
+})
+
+-- Start the planner floating, while allowing Super+W to tile it normally.
+hl.window_rule({
+    name   = "quickshell-planner",
+    match  = { class = "^org\\.quickshell$", title = "^Planner$" },
+    float  = true,
+    center = true,
+})
+
+-- Match Kitty/Codex to Planner's 70% glass reference; share desktop blur.
+hl.window_rule({
+    name   = "terminal-planner-glass",
+    match  = { class = "^(kitty|codex)$" },
+    opacity = "0.70 override 0.70 override 0.70 override",
+    opaque = false,
+    no_blur = false,
+    xray = true,
 })

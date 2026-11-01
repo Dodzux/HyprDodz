@@ -42,9 +42,9 @@ BarItem {
         acceptedButtons: Qt.LeftButton
         onTapped: root.toggleCalendar()
     }
-    // Right click: notification history (the bar bell does the same)
+    // Right click: personal task list. Notification history stays on the bell.
     TapHandler {
         acceptedButtons: Qt.RightButton
-        onTapped: root.toggleNotifications()
+        onTapped: root.toggleTasks()
     }
 }

@@ -31,16 +31,18 @@ Rectangle {
     // taskbar): neutral glow, under hover/focus/press.
     property bool selected: false
 
-    // Reserve the panel's final width before revealing hover details.
+    // Reveal details after a short dwell; panels follow their actual width.
     // The delay runs once per hover, never once per animation frame.
     property real panelTargetWidth: width
     readonly property bool detailsRequested: enabled && (hovered || activeFocus)
     property bool detailsShown: false
     property bool holdDetails: false
-    onHoldDetailsChanged: if (!holdDetails && !detailsRequested) detailsShown = false
+    property bool groupHoverHold: false
+    onGroupHoverHoldChanged: if (!groupHoverHold && !holdDetails && !detailsRequested) detailsShown = false
+    onHoldDetailsChanged: if (!holdDetails && !groupHoverHold && !detailsRequested) detailsShown = false
     onDetailsRequestedChanged: {
         if (detailsRequested) detailsDelay.restart();
-        else { detailsDelay.stop(); if (!holdDetails) detailsShown = false; }
+        else { detailsDelay.stop(); if (!holdDetails && !groupHoverHold) detailsShown = false; }
     }
     Timer { id: detailsDelay; interval: 110; onTriggered: item.detailsShown = item.detailsRequested }
 
@@ -64,8 +66,6 @@ Rectangle {
                 : hovered ? glass(0.10)
                 : glass(0)
 
-    scale: pressed ? 0.96 : hovered || focused ? 1.045 : 1
-    Behavior on scale { NumberAnimation { duration: Theme.motionFast; easing.type: Easing.OutCubic } }
 
     Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.InOutQuad } }
     Behavior on border.color { ColorAnimation { duration: 180; easing.type: Easing.InOutQuad } }
