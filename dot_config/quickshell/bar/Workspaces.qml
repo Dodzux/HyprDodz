@@ -266,18 +266,11 @@ Row {
                         else workspaces.leavePeek(wsRect.wsId);
                     }
                 }
-                // Highlight when focused, hovered, or occupied
-                color: {
-                    if (isFocused || editing) return Theme.bgSelection;
-                    // Hover / keyboard focus: the bar's quiet glass lift (see BarItem)
-                if (wsHover.hovered || wsRect.activeFocus) return Qt.rgba(1, 1, 1, 0.08);
-                    if (isOccupied) return "transparent";
-                    return "transparent";
-                }
+                color: "transparent"
                 border.color: isFocused || editing || wsRect.activeFocus ? Theme.accent
                         : wsHover.hovered ? Qt.rgba(1, 1, 1, 0.10)
                         : isOccupied ? Theme.borderMuted : "transparent"
-                border.width: 1
+                border.width: 0
 
                 Keys.onReturnPressed: workspaces.goTo(wsId)
                 Keys.onSpacePressed: workspaces.goTo(wsId)

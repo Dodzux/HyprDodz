@@ -128,6 +128,8 @@ ListView {
         // BarItem: the bar's shared hover / focus / press look (accent tint).
         delegate: BarItem {
             id: taskItem
+            color: "transparent"
+            border.width: 0
             required property var modelData
             enabled: modelData !== null
             width: 28
