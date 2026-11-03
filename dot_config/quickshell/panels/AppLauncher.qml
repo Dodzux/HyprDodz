@@ -15,6 +15,20 @@ import qs.services
 PanelWindow {
     id: launcherWindow
     visible: false
+    property bool keyboardSelection: false
+    property point lastPointerPosition: Qt.point(-1, -1)
+    property var navigationKeys: ({})
+    readonly property bool navigationHeld: Object.keys(navigationKeys).length > 0
+    function pressNavigation(event) {
+        var next = Object.assign({}, navigationKeys); next[event.key] = true;
+        navigationKeys = next; keyboardSelection = true; event.accepted = true;
+    }
+    function releaseNavigation(event) {
+        if (event.isAutoRepeat || !navigationKeys[event.key]) return;
+        var next = Object.assign({}, navigationKeys); delete next[event.key];
+        navigationKeys = next; event.accepted = true;
+    }
+    onVisibleChanged: { navigationKeys = ({}); keyboardSelection = false; }
     property alias queryText: searchInput.text
     property var shortcutHints: ({})
     function showLauncher() {
@@ -141,6 +155,26 @@ PanelWindow {
 
         // Block background click propagation
         MouseArea { anchors.fill: parent; onClicked: searchInput.forceActiveFocus() }
+        HoverHandler {
+            id: selectionPointer
+            blocking: false
+            function moved() {
+                if (!hovered) return;
+                var p = point.scenePosition;
+                if (p.x === launcherWindow.lastPointerPosition.x && p.y === launcherWindow.lastPointerPosition.y) return;
+                launcherWindow.lastPointerPosition = Qt.point(p.x, p.y);
+                if (launcherWindow.navigationHeld) return;
+                var view = appList.mapFromItem(launcherPanel, point.position.x, point.position.y);
+                if (view.x < 0 || view.y < 0 || view.x >= appList.width || view.y >= appList.height) return;
+                launcherWindow.keyboardSelection = false;
+                var content = appList.contentItem.mapFromItem(launcherPanel, point.position.x, point.position.y);
+                var index = appList.indexAt(content.x, content.y);
+                if (index >= 0) appList.currentIndex = index;
+            }
+            onPointChanged: moved()
+            onHoveredChanged: if (hovered) moved()
+        }
+
 
         // ── Search Box ──
         Rectangle {
@@ -181,8 +215,10 @@ PanelWindow {
                     }
 
                     Keys.onEscapePressed: launcherWindow.visible = false
-                    Keys.onDownPressed:   appList.incrementCurrentIndex()
-                    Keys.onUpPressed:     appList.decrementCurrentIndex()
+                    Keys.onDownPressed: event => { launcherWindow.pressNavigation(event); appList.incrementCurrentIndex(); }
+                    Keys.onUpPressed: event => { launcherWindow.pressNavigation(event); appList.decrementCurrentIndex(); }
+                    Keys.onReleased: event => launcherWindow.releaseNavigation(event)
+                    onActiveFocusChanged: if (!activeFocus) launcherWindow.navigationKeys = ({})
                     Keys.onReturnPressed: {
                         if (launcherWindow.filteredApps.length > 0) {
                             var entry = launcherWindow.filteredApps[appList.currentIndex]
@@ -268,9 +304,9 @@ PanelWindow {
                 antialiasing: true
                 required property var modelData
                 required property int index
-                readonly property bool highlighted: appList.currentIndex === index || rowHover.hovered
+                readonly property bool highlighted: appList.currentIndex === index
 
-                color: rowHover.hovered && appList.currentIndex !== index
+                color: !launcherWindow.keyboardSelection && rowHover.hovered && appList.currentIndex !== index
                     ? Theme.launcherHoverBg : "transparent"
                 border.color: "transparent"
                 border.width: 1
@@ -363,7 +399,7 @@ PanelWindow {
                 HoverHandler {
                     id: rowHover
                     onHoveredChanged: {
-                        if (hovered) appList.currentIndex = appRow.index;
+                        if (hovered && !launcherWindow.keyboardSelection) appList.currentIndex = appRow.index;
                     }
                 }
 
