@@ -76,10 +76,9 @@ float forkDistance(vec2 p, vec2 a, vec2 b, float seed) {
     return distanceToFork;
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = fragCoord / iResolution.xy;
-    vec4 terminal = texture(iChannel0, uv);
-    fragColor = terminal;
+vec4 applyCursorLightning(vec4 terminal, vec2 fragCoord) {
+    vec4 fragColor = terminal;
+    if (iTime - iTimeCursorChange >= DURATION) return terminal; // Expired: texture pass-through.
 
     vec2 currentCenter = iCurrentCursor.xy
         + vec2(iCurrentCursor.z * 0.5, -iCurrentCursor.w * 0.5);
@@ -90,6 +89,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     float age = clamp((iTime - iTimeCursorChange) / DURATION, 0.0, 1.0);
     if (travel > minimumTravel && age < 1.0) {
+        // All bolt/fork geometry fits inside this expanded segment box.
+        // Whole four-pixel blocks keep neighboring derivative lanes together.
+        float padding = travel * 0.22 + GLOW_WIDTH * 4.0 + CORE_WIDTH + 4.0;
+        vec2 lower = floor((min(previousCenter, currentCenter) - vec2(padding)) / 4.0) * 4.0;
+        vec2 upper = ceil((max(previousCenter, currentCenter) + vec2(padding)) / 4.0) * 4.0;
+        vec2 block = floor(fragCoord / 4.0) * 4.0;
+        if (any(lessThan(block, lower)) || any(greaterThanEqual(block, upper))) return terminal;
         // Quantizing the event time gives each cursor jump a stable bolt shape.
         float seed = floor(iTimeCursorChange * 1000.0) * 0.013;
         float mainDistance = mainBoltDistance(fragCoord, previousCenter, currentCenter, seed);
@@ -122,4 +128,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
             * step(fragCoord.y, cursorMax.y);
         fragColor = mix(fragColor, terminal, insideCursor);
     }
+    return fragColor;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    fragColor = applyCursorLightning(texture(iChannel0, fragCoord / iResolution.xy), fragCoord);
 }

@@ -447,6 +447,9 @@ def apply_files(hex_color, token):
         (r'^accent2[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent2 = "#{companion(hex_color)}"'),
     ])
     rewrite("~/.config/kitty/kitty.conf", [
+        # Approved terminal style: tab/link accents follow the same wallpaper.
+        (r"^url_color[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"url_color #{hex_color}"),
+        (r"^active_tab_foreground[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"active_tab_foreground #{hex_color}"),
         # Custom Codex syntax and UI accents update live in Kitty.
         (r"^color4[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"color4  #{hex_color}"),
         (r"^color12[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"color12 #{hex_color}"),

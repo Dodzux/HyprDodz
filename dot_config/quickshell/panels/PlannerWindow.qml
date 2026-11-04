@@ -145,7 +145,7 @@ spacing:13
                     RowLayout {
                         Layout.fillWidth:true
                         Text {text:"To-Do";color:Theme.text;font.family:Theme.fontMain;font.pixelSize:21;font.bold:true;Layout.fillWidth:true}
-                        DesktopButton {label:"+";implicitWidth:26;implicitHeight:26;enabled:DesktopState.ready;onClicked:planner.newRow("")}
+                        DesktopButton {color:"transparent";border.width:0;label:"+";implicitWidth:26;implicitHeight:26;enabled:DesktopState.ready;onClicked:planner.newRow("")}
                     }
                     ListView {
                         id:rows;objectName:"planner-items";Layout.fillWidth:true;Layout.fillHeight:true
@@ -295,7 +295,7 @@ visible:row.editing;enabled:DesktopState.ready
                                     }
                                 }
                                 Rectangle {Layout.preferredWidth:3;Layout.preferredHeight:3;radius:2;color:row.linked?row.ink:"transparent"}
-                                DesktopButton {label:"×";implicitWidth:21;implicitHeight:23;opacity:rowHover.hovered || editor.activeFocus || activeFocus?1:0;enabled:opacity>0;onClicked:DesktopState.removePlannerItem(row.modelData.id)}
+                                DesktopButton {color:"transparent";border.width:0;label:"×";implicitWidth:21;implicitHeight:23;opacity:rowHover.hovered || editor.activeFocus || activeFocus?1:0;enabled:opacity>0;onClicked:DesktopState.removePlannerItem(row.modelData.id)}
                             }
                         }
                         Rectangle {

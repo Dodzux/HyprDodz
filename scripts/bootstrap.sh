@@ -153,8 +153,6 @@ if [ -d "$SDDM_SYSTEM_DIR" ]; then
     log_info "Installing SDDM config and hypr-sddm greeter theme..."
     sudo install -Dm644 "$REPO_DIR/system/etc/sddm.conf" /etc/sddm.conf
     sudo cp -rT "$SDDM_SYSTEM_DIR" /usr/share/sddm/themes/hypr-sddm
-    sudo install -Dm644 "$REPO_DIR/Pictures/Wallpapers/street.gif"   /usr/share/sddm/themes/hypr-sddm/Backgrounds/street.gif
-    sudo install -Dm644 "$REPO_DIR/Pictures/Wallpapers/black_bg.jpg" /usr/share/sddm/themes/hypr-sddm/Backgrounds/black_bg.jpg
     # SDDM layers theme.conf.user over the theme's theme.conf: the per-machine
     # greeter header lives there, so the tracked theme stays generic.
     printf '[General]\nHeaderText="%s"\n' "${DISPLAY_NAME//\"/}" \

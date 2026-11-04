@@ -23,14 +23,14 @@ PanelWindow {
     property var clients: []
     property var monitors: []
     property var workspaces: []
+    property var addedWorkspaces: []
+    property int hoveredWorkspace: 0
     property int activeWs: 1
     property string selectedAddress: ""
-    property string query: ""
     property string message: ""
     property bool opening: false
     property var undoRequest: null
     property bool undoing: false
-    property int extraWorkspace: 0
     onOrderedWindowsChanged: {
         if (!opening && !orderedWindows.some(c => c.address === selectedAddress))
             selectedAddress = orderedWindows.length ? orderedWindows[0].address : "";
@@ -39,21 +39,16 @@ PanelWindow {
     readonly property var workspaceIds: {
         var ids = [];
         clients.forEach(c => { var id = c.workspace.id; if (id > 0 && ids.indexOf(id) < 0) ids.push(id); });
-        if (extraWorkspace > 0 && ids.indexOf(extraWorkspace) < 0) ids.push(extraWorkspace);
+        addedWorkspaces.forEach(id => { if (ids.indexOf(id) < 0) ids.push(id); });
         return ids.sort((a, b) => a - b);
     }
-    readonly property var orderedWindows: clients.filter(c => matches(c)).slice()
+    readonly property var orderedWindows: clients.slice()
         .sort((a, b) => a.workspace.id - b.workspace.id || a.at[1] - b.at[1] || a.at[0] - b.at[0]);
 
-    function matches(c) {
-        var q = query.toLowerCase().trim();
-        return !q || (c.title || "").toLowerCase().includes(q) || (c.class || "").toLowerCase().includes(q);
-    }
     function applySnapshot(data) {
         if (!data.monitors || !data.clients || !data.workspaces) throw new Error("Invalid desktop snapshot");
         monitors = data.monitors;
         clients = data.clients;
-        if (extraWorkspace > 0 && clients.some(c => c.workspace.id === extraWorkspace)) extraWorkspace = 0;
         workspaces = data.workspaces;
         var mon = monitors.find(m => m.focused) || monitors[0];
         activeWs = mon ? mon.activeWorkspace.id : 1;
@@ -65,9 +60,9 @@ PanelWindow {
     function toggle(scr) {
         if (visible || opening) { opening = false; visible = false; return; }
         if (scr) screen = scr;
-        query = "";
+        addedWorkspaces = [];
+        hoveredWorkspace = 0;
         message = "";
-        extraWorkspace = 0;
         opening = true;
         if (!fetch.running) fetch.running = true;
     }
@@ -77,9 +72,20 @@ PanelWindow {
         visible = false;
     }
     function addWorkspaceTarget() {
+        if (busy) return;
         var id = 1;
         while (workspaceIds.indexOf(id) >= 0) id++;
-        extraWorkspace = id;
+        addedWorkspaces = addedWorkspaces.concat([id]);
+    }
+    function closeEmptyWorkspace() {
+        if (busy || (content.item && content.item.dragging)) return;
+        var empty = addedWorkspaces.filter(id => windowsOn(id).length === 0);
+        var target = hoveredWorkspace || (empty.length ? empty[empty.length - 1] : 0);
+        if (!target) return;
+        if (windowsOn(target).length) { message = "Only empty workspace cards can be removed"; return; }
+        addedWorkspaces = addedWorkspaces.filter(id => id !== target);
+        hoveredWorkspace = 0;
+        message = "";
     }
     function windowsOn(id) { return clients.filter(c => c.workspace.id === id); }
     function monitorFor(id) { return monitors.find(m => m.id === id) || monitors[0] || null; }
@@ -236,6 +242,12 @@ PanelWindow {
                 if (event.key === Qt.Key_Escape) {
                     overview.dismiss();
                 } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) overview.undoLast();
+                else if (event.key === Qt.Key_Delete) {
+                    if (!event.isAutoRepeat) overview.closeEmptyWorkspace();
+                }
+                else if (event.key === Qt.Key_N && !(event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) {
+                    if (!event.isAutoRepeat) overview.addWorkspaceTarget();
+                }
                 else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) overview.selectNext(1);
                 else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) overview.selectNext(-1);
                 else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) overview.focusWindow(overview.orderedWindows.find(c => c.address === overview.selectedAddress));
@@ -247,61 +259,6 @@ PanelWindow {
                 } else return;
                 event.accepted = true;
             }
-
-            Rectangle {
-                anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 48 }
-                width: Math.min(overview.width * 0.92, 1100)
-                height: 62
-                radius: 14
-                color: Theme.glassBg
-                border.color: Theme.glassBorder
-                RowLayout {
-                    anchors { fill: parent; margins: 14 }
-                    spacing: 16
-                    Text { text: "Workspaces"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 18; font.bold: true }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 34
-                        color: Theme.bgSelection
-                        radius: 7
-                        TextInput {
-                            id: search
-                            anchors { fill: parent; margins: 8 }
-                            color: Theme.text
-                            font.family: Theme.fontMain
-                            font.pixelSize: 12
-                            selectByMouse: true
-                            selectionColor: Theme.accent
-                            selectedTextColor: Theme.base
-                            text: overview.query
-                            onTextEdited: overview.query = text
-                            Text { anchors.fill: parent; text: "Search windows…  /"; color: Theme.subtext0; font: parent.font; visible: !parent.text && !parent.activeFocus }
-                            Keys.onEscapePressed: overview.dismiss()
-                            Keys.onReturnPressed: overview.focusWindow(overview.orderedWindows.find(c => c.address === overview.selectedAddress))
-                            Keys.onDownPressed: { overview.selectNext(1); stage.forceActiveFocus(); }
-                        }
-                    }
-                    Rectangle {
-                        Layout.preferredWidth: 78; Layout.preferredHeight: 34
-                        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
-                        Behavior on opacity { NumberAnimation { duration: Theme.motionFast } }
-                        radius: 7; color: undoHover.hovered ? Theme.launcherSelectionBg : Theme.bgSelection
-                        opacity: overview.undoRequest && !overview.busy ? 1 : 0.4
-                        Text { anchors.centerIn: parent; text: "↶ Undo"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 12 }
-                        HoverHandler { id: undoHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { enabled: overview.undoRequest !== null && !overview.busy; onTapped: overview.undoLast() }
-                    }
-                    Rectangle {
-                        Layout.preferredWidth: 110; Layout.preferredHeight: 34
-                        Behavior on color { ColorAnimation { duration: Theme.motionFast } }
-                        radius: 7; color: addHover.hovered ? Theme.launcherSelectionBg : Theme.bgSelection
-                        Text { anchors.centerIn: parent; text: "+ Workspace"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 12 }
-                        HoverHandler { id: addHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { enabled: !overview.busy; onTapped: overview.addWorkspaceTarget() }
-                    }
-                }
-            }
-            Shortcut { sequence: "/"; enabled: overview.visible && !search.activeFocus; onActivated: search.forceActiveFocus() }
 
             GridView {
                 id: cards
@@ -342,6 +299,13 @@ PanelWindow {
                         readonly property bool dropHere: stage.dragging && stage.dropWorkspace === wsId
                         width: stage.tileW
                         spacing: 8
+                        HoverHandler {
+                            blocking: false
+                            onHoveredChanged: {
+                                if (hovered) overview.hoveredWorkspace = card.wsId;
+                                else if (overview.hoveredWorkspace === card.wsId) overview.hoveredWorkspace = 0;
+                            }
+                        }
                         Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                         Rectangle {
                             width: parent.width; height: 30; radius: 7
@@ -399,7 +363,6 @@ PanelWindow {
                                     readonly property real monW: mon ? mon.width / mon.scale : overview.width
                                     readonly property real monH: mon ? mon.height / mon.scale : overview.height
                                     readonly property bool selected: overview.selectedAddress === client.address
-                                    readonly property bool matching: overview.matches(client)
                                     readonly property var toplevel: overview.toplevelFor(client)
                                     x: Math.max(0, (client.at[0] - (mon ? mon.x : 0)) / monW * tile.width)
                                     y: Math.max(0, (client.at[1] - (mon ? mon.y : 0)) / monH * tile.height)
@@ -410,7 +373,7 @@ PanelWindow {
                                     Behavior on width { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                                     Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
                                     z: client.floating ? 2 : 1
-                                    opacity: !matching ? 0.17 : stage.dragging && stage.dragKind === "window" && stage.payload && stage.payload.address === client.address ? 0.3 : 1
+                                    opacity: stage.dragging && stage.dragKind === "window" && stage.payload && stage.payload.address === client.address ? 0.3 : 1
                                     Behavior on opacity { NumberAnimation { duration: 120 } }
                                     radius: 8; antialiasing: true; clip: true
                                     color: "transparent"
@@ -420,7 +383,7 @@ PanelWindow {
                                         id: thumb
                                         anchors { fill: parent; margins: 2 }
                                         captureSource: win.toplevel ? win.toplevel.wayland : null
-                                        live: overview.visible && win.matching && !stage.dragging
+                                        live: overview.visible && !stage.dragging
                                     }
                                     Image {
                                         anchors.centerIn: parent
@@ -444,7 +407,7 @@ PanelWindow {
                                     HoverHandler { id: winHover; cursorShape: Qt.OpenHandCursor }
                                     MouseArea {
                                         anchors.fill: parent
-                                        enabled: win.matching && !overview.busy
+                                        enabled: !overview.busy
                                         preventStealing: true
                                         onPressed: mouse => stage.begin("window", win.client, this, mouse)
                                         onPositionChanged: mouse => stage.update(this, mouse)
@@ -459,7 +422,7 @@ PanelWindow {
             Text {
                 anchors.centerIn: parent
                 visible: overview.workspaceIds.length === 0
-                text: "No windows on regular workspaces\nUse + Workspace to add a drop target"
+                text: "No windows on regular workspaces"
                 horizontalAlignment: Text.AlignHCenter
                 color: Theme.subtext0
                 font.family: Theme.fontMain
@@ -485,7 +448,7 @@ PanelWindow {
                 anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 38 }
                 spacing: 10
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: overview.busy ? "Moving…" : overview.message; color: Theme.accent; font.family: Theme.fontMain; font.pixelSize: 13 }
-                Text { text: "Drag a window to move · Drag a header to swap · Shift + 1–0 moves selected · Ctrl+Z undoes · Esc / right-click background closes"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 11 }
+                Text { text: "N adds · Delete removes empty card · Drag a window to move · Drag a header to swap · Shift + 1–0 moves selected · Ctrl+Z undoes · Esc / right-click background closes"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 11 }
             }
             Component.onCompleted: forceActiveFocus()
         }

@@ -19,7 +19,7 @@ def hypr_json(kind):
 
 
 def shortcuts():
-    aliases = {"brave": "brave-browser", "neovim": "nvim"}
+    aliases = {"brave": "brave-browser", "neovim": "nvim", "herdr": "herdr-app"}
     result = {}
     for bind in hypr_json("binds"):
         description = bind.get("description", "")

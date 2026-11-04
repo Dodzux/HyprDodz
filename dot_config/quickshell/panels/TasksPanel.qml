@@ -37,7 +37,18 @@ spacing:10
                 Layout.fillWidth:true
                 Text { text:"Tasks";color:Theme.text;font.family:Theme.fontMain;font.pixelSize:13;font.bold:true;Layout.fillWidth:true }
                 Text { text:DesktopState.remaining+" left";color:Theme.subtext0;font.family:Theme.fontMain;font.pixelSize:10 }
-                DesktopButton {label:"Planner";implicitHeight:26;onClicked:{panel.visible=false;Qt.callLater(()=>root.openPlanner());}}
+                DesktopButton {
+                    objectName:"open-planner"
+                    implicitWidth:30;implicitHeight:26
+                    color:"transparent";border.width:0
+                    Accessible.name:"Open Planner"
+                    onClicked:{panel.visible=false;Qt.callLater(()=>root.openPlanner());}
+                    Image {
+                        anchors.centerIn:parent;width:24;height:24
+                        source:"file://"+Quickshell.shellDir+"/assets/planner.svg"
+                        sourceSize:Qt.size(48,48)
+                    }
+                }
             }
             RowLayout {
                 id:taskEntry
@@ -58,7 +69,7 @@ clip:true
                         Text { text:"Add a task…";visible:!entry.text;color:Theme.subtext0;font:entry.font }
                     }
                 }
-                DesktopButton { label:"+";enabled:DesktopState.ready && entry.text.trim().length>0;onClicked:if(DesktopState.addTask(entry.text)){entry.text="";entry.forceActiveFocus();} }
+                DesktopButton { color:"transparent";border.width:0;label:"+";enabled:DesktopState.ready && entry.text.trim().length>0;onClicked:if(DesktopState.addTask(entry.text)){entry.text="";entry.forceActiveFocus();} }
             }
             ListView {
                 id:taskList;objectName:"tasks-list";Layout.fillWidth:true;Layout.fillHeight:true;clip:true;spacing:6
@@ -183,7 +194,7 @@ spacing:10
                                 Keys.onEscapePressed:event=>{row.cancelEdit();event.accepted=true;}
                             }
                         }
-                        DesktopButton { label:"×";onClicked:DesktopState.removeTask(row.modelData.id) }
+                        DesktopButton { color:"transparent";border.width:0;label:"×";onClicked:DesktopState.removeTask(row.modelData.id) }
                     }
                 }
                 Rectangle {

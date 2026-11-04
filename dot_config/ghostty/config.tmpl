@@ -84,15 +84,16 @@ window-padding-x = 8
 window-padding-y = 8
 window-padding-color = background
 window-theme = dark
-window-decoration = auto
-gtk-titlebar = true
+window-decoration = none
+gtk-titlebar = false
 gtk-tabs-location = top
 
 # -----------------------------------------------------------------------------
 # Shell Integration
 # -----------------------------------------------------------------------------
 
-shell-integration = detect
+command = direct:/usr/bin/fish
+shell-integration = fish
 shell-integration-features = cursor,sudo,title
 
 # -----------------------------------------------------------------------------
@@ -106,7 +107,7 @@ app-notifications = no-config-reload
 quit-after-last-window-closed = true
 clipboard-read = allow
 clipboard-write = allow
-scrollback-limit = 10000000
+scrollback-limit-bytes = 10000000
 
 # -----------------------------------------------------------------------------
 # Shaders & Effects
@@ -118,3 +119,6 @@ custom-shader = shaders/cursor_warp.glsl
 custom-shader-animation = true
 
 
+
+# Reuse the app process for subsequent windows and tabs.
+gtk-single-instance = true

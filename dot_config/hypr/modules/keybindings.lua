@@ -49,7 +49,7 @@ end
 -- ▓▒░ APPLICATION LAUNCHER BINDINGS
 bind(m .. " + T", hl.dsp.exec_cmd(vars.terminal), { description = "Apps: Terminal (kitty)" })
 bind(m .. " + E", hl.dsp.exec_cmd(vars.fileManager), { description = "Apps: File manager (yazi)" })
-bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Brave)" })
+bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Brave Origin)" })
 bind(m .. " + C", hl.dsp.exec_cmd(vars.terminal_editor), { description = "Apps: Editor (Neovim)" })     -- kitty -e nvim (NvChad)
 bind(m .. " + O", hl.dsp.exec_cmd(vars.notingApp), { description = "Apps: Notes (Obsidian)" })
 bind(m .. " + D", hl.dsp.exec_cmd(vars.discord), { description = "Apps: Discord" })
@@ -59,6 +59,10 @@ if vars.codex then
 end
 if vars.thePlan then   -- nil unless installed (modules/variables.lua)
     bind(m .. " + Y", hl.dsp.exec_cmd(vars.thePlan), { description = "Apps: The Plan" })
+end
+
+if vars.herdr then
+    bind(m .. " + R", hl.dsp.exec_cmd(vars.herdr), { description = "Apps: Herdr" })
 end
 
 -- ▓▒░ QUICKSHELL PANEL TRIGGERS
@@ -170,7 +174,7 @@ bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true,
 bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true, description = "Media: Previous track" })
 
 -- ▓▒░ WALLPAPER TRANSITION (SUPER + SHIFT + W)
-bind(m .. " + SHIFT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/awww_transition.sh"), { description = "System: Random wallpaper" })
+bind(m .. " + SHIFT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/awww_transition.sh"), { repeating = true, description = "System: Random wallpaper" })
 
 -- ▓▒░ OPENRGB COLOR PICKER (SUPER + SHIFT + P)
 bind(m .. " + SHIFT + P", hl.dsp.exec_cmd("~/.config/hypr/scripts/pick_rgb.fish"), { description = "System: Pick an OpenRGB colour from the screen" })

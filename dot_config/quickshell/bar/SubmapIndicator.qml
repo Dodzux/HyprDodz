@@ -11,14 +11,14 @@ Rectangle {
     width: submapText.implicitWidth + 16
     radius: 4
     antialiasing: true
-    color: Theme.accent
+    color: "transparent"
     visible: submap !== "" && submap !== "default"
 
     Text {
         id: submapText
         anchors.centerIn: parent
         text: submapWidget.submap.toUpperCase()
-        color: Theme.base
+        color: Theme.accent
         
         font.family: Theme.fontMain
         font.pixelSize: 12

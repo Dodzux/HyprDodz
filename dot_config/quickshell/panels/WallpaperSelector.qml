@@ -11,7 +11,9 @@ PanelWindow {
     id: wallpaperWindow
     visible: false
     function choose(item) {
-        Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/awww_transition.sh", item.path]);
+        Quickshell.execDetached(["systemd-run", "--user", "--scope", "--quiet", "--collect",
+                                "--slice=app.slice", "--description=Wallpaper switch", "bash",
+                                Quickshell.env("HOME") + "/.config/hypr/scripts/awww_transition.sh", item.path]);
         visible = false;
     }
 

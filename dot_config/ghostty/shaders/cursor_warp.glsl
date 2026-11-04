@@ -84,12 +84,16 @@ const float DRAW_THRESHOLD = 1.5;
 // people expect them.
 const bool HIDE_TRAILS_ON_THE_SAME_LINE = false;
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord)
+vec4 applyCursorWarp(vec4 terminal, vec2 fragCoord)
 {
-    #if !defined(WEB)
-    fragColor = texture(iChannel0, fragCoord.xy / iResolution.xy);
-    #endif
-    if (iTime - iTimeCursorChange >= DURATION) return; // Idle: no trail calculations.
+    vec4 fragColor = terminal;
+    if (iTime - iTimeCursorChange >= DURATION) return terminal; // Idle: no trail calculations.
+    // Reject small/no cursor moves before doing screen-wide geometry work.
+    vec2 currentCenterPixels = getRectangleCenter(iCurrentCursor);
+    vec2 previousCenterPixels = getRectangleCenter(iPreviousCursor);
+    float cursorSizePixels = max(iCurrentCursor.z, iCurrentCursor.w);
+    if (distance(currentCenterPixels, previousCenterPixels) <= DRAW_THRESHOLD * cursorSizePixels) return terminal;
+    if (HIDE_TRAILS_ON_THE_SAME_LINE && iCurrentCursor.y == iPreviousCursor.y) return terminal;
     float sourceAlpha = fragColor.a;
     //Normalization for fragCoord to a space of -1 to 1;
     vec2 vu = normalize(fragCoord, 1.);
@@ -133,6 +137,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
             alphaModifier = 1.0;
         }
 
+        // At full fade, the original mix is exactly the unmodified texture.
+        if (alphaModifier >= 1.0) return terminal;
+
         float sdfCursor = getSdfRectangle(vu, currentCursor.xy - (currentCursor.zw * offsetFactor), currentCursor.zw * 0.5);
         float sdfTrail = getSdfParallelogram(vu, v0, v1, v2, v3);
 
@@ -142,4 +149,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
         fragColor = mix(newColor, fragColor, step(sdfCursor, 0));
         fragColor.a = sourceAlpha; // Preserve native transparency for compositor blur.
     }
+    return fragColor;
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    fragColor = applyCursorWarp(texture(iChannel0, fragCoord / iResolution.xy), fragCoord);
 }

@@ -28,7 +28,7 @@ chezmoi apply --interactive --exclude=scripts
 
 Initialization asks for the name shown on the lock screen and greeter, and detects the GPU vendor. A machine without a matching host profile uses automatic monitor settings.
 
-Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave** is installed separately (`brave-bin` on my machine); optional personal apps such as Codex also need their own installation.
+Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave Origin** is installed separately (`brave-origin-bin` on my machine); optional personal apps such as Codex also need their own installation.
 
 For full setup, review [scripts/bootstrap.sh](scripts/bootstrap.sh). It upgrades the system, installs packages and GPU drivers, configures Fish, SDDM and services, and force-applies the configs:
 
