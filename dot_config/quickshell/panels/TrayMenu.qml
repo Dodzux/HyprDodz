@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import qs
+import qs.services
 
 PanelWindow {
     id:panel;visible:false
@@ -16,11 +17,12 @@ PanelWindow {
     property var chain:[]
     property string appTitle:""
     property real anchorX:0
+    property real anchorY:-1
     readonly property var entries:(chain.length?chain[chain.length-1].opener:opener).children.values
     onEntriesChanged: if(visible) Qt.callLater(() => {list.currentIndex=first();})
-    function open(scr,item,x) {
+    function open(scr,item,x,y) {
         if(scr)screen=scr;
-        rootMenu=item.menu;chain=[];appTitle=item.title || item.id || "Menu";anchorX=x;visible=true;
+        rootMenu=item.menu;chain=[];appTitle=item.title || item.id || "Menu";anchorX=x;anchorY=y===undefined?-1:y;visible=true;
         Qt.callLater(()=>{list.currentIndex=first();card.forceActiveFocus();reveal.restart();});
     }
     function first() {return entries.findIndex(e=>!e.isSeparator && e.enabled);}
@@ -40,7 +42,7 @@ PanelWindow {
     MouseArea {anchors.fill:parent;onClicked:panel.visible=false}
     Rectangle {
         id:card
-        x:Math.max(14,Math.min(panel.width-width-14,panel.anchorX-width/2));y:71
+        x:BarState.panelX(panel.width,width,"end",panel.anchorX);y:BarState.panelY(panel.height,height,"end",panel.anchorY)
         width:292;height:Math.min(panel.height-110,54+list.contentHeight)
         radius:16;color:Theme.glassBg;border.color:Theme.glassBorder;border.width:1
         focus:true

@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs
+import qs.services
 
 BarItem {
     id: brightnessWidget
@@ -117,9 +118,9 @@ BarItem {
         visible: false
         grabFocus: true
         anchor.item: brightnessWidget
-        anchor.rect.x: brightnessWidget.width / 2
-        anchor.rect.y: brightnessWidget.height + 12
-        anchor.gravity: Edges.Bottom
+        anchor.rect.x: BarState.popupX(brightnessWidget.width)
+        anchor.rect.y: BarState.popupY(brightnessWidget.height)
+        anchor.gravity: BarState.popupGravity
         color: "transparent"
         implicitWidth: 284
         implicitHeight: content.implicitHeight + 24

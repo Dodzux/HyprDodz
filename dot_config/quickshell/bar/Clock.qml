@@ -12,8 +12,9 @@ BarItem {
         precision: SystemClock.Seconds
     }
 
-    width: timeText.implicitWidth + 20
-    
+    width: verticalBar ? 44 : timeText.implicitWidth + 20
+    height: verticalBar ? 40 : 28
+
 
     Keys.onReturnPressed: root.toggleCalendar()
     Keys.onSpacePressed: root.toggleCalendar()
@@ -22,7 +23,8 @@ BarItem {
     Text {
         id: timeText
         anchors.centerIn: parent
-        text: Qt.formatDateTime(clock.date, "ddd h:mm:ss AP")
+        text: Qt.formatDateTime(clock.date, verticalBar ? "HH\nmm" : "ddd h:mm:ss AP")
+        horizontalAlignment: Text.AlignHCenter
         // Text, not accent: the accent follows the wallpaper now (sync_border.py)
         // and a mid-tone blue clock on a dark bar reads worse than platinum did.
         color: Theme.text

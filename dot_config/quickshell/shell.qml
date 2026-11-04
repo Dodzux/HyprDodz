@@ -54,14 +54,9 @@ ShellRoot {
         implicitHeight: content.implicitHeight + 40
         color: "transparent"
         exclusiveZone: -1
-        anchors {
-            top: true
-            right: true
-        }
-        margins {
-            top: 71
-            right: 14
-        }
+        anchors { top: true; left: true }
+        margins.top: BarState.notificationY(screen, implicitHeight)
+        margins.left: BarState.notificationX(screen, implicitWidth)
         WlrLayershell.namespace: "quickshell-reload-toast"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -123,7 +118,7 @@ ShellRoot {
             border.color: Qt.rgba(toast.highlight.r, toast.highlight.g, toast.highlight.b, 0.38)
             opacity: toast.shown ? 1 : 0
             scale: toast.shown ? 1 : 0.97
-            transformOrigin: Item.TopRight
+            transformOrigin: BarState.notificationOrigin
             Behavior on opacity {
                 NumberAnimation {
                     duration: 160
@@ -253,13 +248,14 @@ ShellRoot {
     }
 
     signal togglePowerMenu
+    signal dismissBarPopups
     signal toggleBarFocus
     signal toggleCalendar
     signal toggleWallpaperSelector
     signal toggleTasks
     signal toggleNotifications
     signal toggleCheatsheet
-    signal toggleNetwork(var scr, real anchorX)
+    signal toggleNetwork(var scr, real anchorX, real anchorY)
     signal toggleOverview
 
     // Notifications that arrived since the history panel was last opened —
@@ -325,8 +321,8 @@ ShellRoot {
     function renameWorkspace(id) {
         workspaceRename.open(getFocusedScreen(), id);
     }
-    function showTrayMenu(scr, item, x) {
-        trayMenu.open(scr, item, x);
+    function showTrayMenu(scr, item, x, y) {
+        trayMenu.open(scr, item, x, y);
     }
     onToggleNotifications: {
         tasksPanel.visible = false;
@@ -336,7 +332,7 @@ ShellRoot {
     }
     onToggleOverview: overviewPanel.toggle(getFocusedScreen())
     onToggleCheatsheet: cheatsheetPanel.toggle(getFocusedScreen())
-    onToggleNetwork: (scr, anchorX) => networkPanel.toggle(scr, anchorX)
+    onToggleNetwork: (scr, anchorX, anchorY) => networkPanel.toggle(scr, anchorX, anchorY)
 
     // ▓▒░ POWER MENU — SUPER+Backspace (GlobalShortcut registered here to avoid duplication per-monitor)
     GlobalShortcut {
@@ -345,6 +341,23 @@ ShellRoot {
         description: "Toggle power menu"
         onPressed: root.togglePowerMenu()
     }
+
+    function placeBar(edge) {
+        if (BarState.edges.indexOf(edge) < 0) return;
+        dismissBarPopups();
+        for (var panel of [calendarPanel, tasksPanel, notificationCenter, networkPanel, trayMenu, powerMenuPanel])
+            panel.visible = false;
+        BarState.moveTo(edge);
+    }
+    IpcHandler {
+        target: "bar"
+        function setEdge(edge: string): void { root.placeBar(edge); }
+        function status(): string { return JSON.stringify({edge: BarState.edge, moving: BarState.moving, ready: BarState.ready, bell: BarState.notificationPoint(root.getFocusedScreen())}); }
+    }
+    GlobalShortcut { appid: "quickshell"; name: "bar-top"; description: "Place bar at top"; onPressed: root.placeBar("top") }
+    GlobalShortcut { appid: "quickshell"; name: "bar-bottom"; description: "Place bar at bottom"; onPressed: root.placeBar("bottom") }
+    GlobalShortcut { appid: "quickshell"; name: "bar-left"; description: "Place bar at left"; onPressed: root.placeBar("left") }
+    GlobalShortcut { appid: "quickshell"; name: "bar-right"; description: "Place bar at right"; onPressed: root.placeBar("right") }
 
     // ▓▒░ TOP BAR NAVIGATION — SUPER+B
     GlobalShortcut {

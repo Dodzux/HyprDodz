@@ -88,6 +88,12 @@ PanelWindow {
         message = "";
     }
     function windowsOn(id) { return clients.filter(c => c.workspace.id === id); }
+    function workAreaFor(monitor) {
+        return monitor && monitor.workArea ? monitor.workArea
+            : ({x: monitor ? monitor.x : 0, y: monitor ? monitor.y : 0,
+                width: monitor ? monitor.width / monitor.scale : overview.width,
+                height: monitor ? monitor.height / monitor.scale : overview.height});
+    }
     function monitorFor(id) { return monitors.find(m => m.id === id) || monitors[0] || null; }
     function toplevelFor(c) {
         return Hyprland.toplevels.values.find(t => t.address.replace(/^0x/, "") === c.address.replace(/^0x/, "")) || null;
@@ -194,7 +200,8 @@ PanelWindow {
             readonly property int cols: count <= 4 ? Math.max(1, count) : Math.min(5, Math.ceil(count / 2))
             readonly property int rows: Math.max(1, Math.ceil(count / cols))
             readonly property real gap: 22
-            readonly property real aspect: overview.height / overview.width
+            readonly property var desktopArea: overview.workAreaFor(overview.monitors.find(m => m.focused) || overview.monitors[0])
+            readonly property real aspect: desktopArea.height / desktopArea.width
             readonly property real tileW: Math.max(100, Math.min(680,
                 (overview.width * 0.92 - (cols - 1) * gap) / cols,
                 (overview.height * 0.71 - (rows - 1) * gap - rows * 38) / rows / aspect))
@@ -360,12 +367,13 @@ PanelWindow {
                                     required property var modelData
                                     readonly property var client: overview.clients.find(c => c.address === modelData) || ({address: modelData, class: "", title: "", workspace: {id: 0}, monitor: -1, at: [0,0], size: [0,0], floating: false})
                                     readonly property var mon: overview.monitorFor(client.monitor)
-                                    readonly property real monW: mon ? mon.width / mon.scale : overview.width
-                                    readonly property real monH: mon ? mon.height / mon.scale : overview.height
+                                    readonly property var workArea: overview.workAreaFor(mon)
+                                    readonly property real monW: workArea.width
+                                    readonly property real monH: workArea.height
                                     readonly property bool selected: overview.selectedAddress === client.address
                                     readonly property var toplevel: overview.toplevelFor(client)
-                                    x: Math.max(0, (client.at[0] - (mon ? mon.x : 0)) / monW * tile.width)
-                                    y: Math.max(0, (client.at[1] - (mon ? mon.y : 0)) / monH * tile.height)
+                                    x: Math.max(0, (client.at[0] - workArea.x) / monW * tile.width)
+                                    y: Math.max(0, (client.at[1] - workArea.y) / monH * tile.height)
                                     width: Math.max(0, Math.min(tile.width - x, Math.max(24, client.size[0] / monW * tile.width)))
                                     height: Math.max(0, Math.min(tile.height - y, Math.max(24, client.size[1] / monH * tile.height)))
                                     Behavior on x { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }

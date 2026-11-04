@@ -7,7 +7,7 @@ import Quickshell.Services.Notifications
 import qs
 import qs.services
 
-// Popup stack, top-right. Lives directly in ShellRoot (not inside Variants).
+// Popup stack follows the bar edge. Lives directly in ShellRoot (not inside Variants).
 //
 // A popup is only a *view* of a notification: when it times out the card goes
 // away but the notification stays tracked, so it is still in the history
@@ -97,19 +97,15 @@ Item {
         // Notifications never steal keyboard input
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        anchors {
-            top: true
-            right: true
-        }
-
-        margins.top: 20
-        margins.right: 16
+        anchors { top: true; left: true }
+        margins.top: BarState.notificationY(screen, implicitHeight)
+        margins.left: BarState.notificationX(screen, implicitWidth)
 
         implicitWidth: 360
         implicitHeight: Math.min(osdColumn.implicitHeight, 600)
 
         color: "transparent"
-        exclusiveZone: 0
+        exclusiveZone: -1
 
         Column {
             id: osdColumn
@@ -187,9 +183,9 @@ Item {
                         }
                     }
 
-                    // Slide in from the right
+                    // Enter from the side occupied by the bar.
                     NumberAnimation on x {
-                        from: 360
+                        from: BarState.notificationAtLeft ? -360 : 360
                         to: 0
                         duration: 250
                         easing.type: Easing.OutCubic

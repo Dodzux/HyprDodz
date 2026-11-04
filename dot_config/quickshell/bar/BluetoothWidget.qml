@@ -29,7 +29,7 @@ BarItem {
     width: contentRow.implicitWidth + 16
 
     HoverHandler { id: bluetoothHover }
-    property bool isHoveredOrFocused: bluetoothHover.hovered || bluetoothWidget.activeFocus
+    property bool isHoveredOrFocused: !verticalBar && (bluetoothHover.hovered || bluetoothWidget.activeFocus)
 
 
 

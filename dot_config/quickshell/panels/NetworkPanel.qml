@@ -36,6 +36,7 @@ PanelWindow {
     color: "transparent"
 
     // Screen x the drop-down centres under (the bar item's centre)
+    property real anchorY: -1
     property real anchorX: width - 200
 
     // Which rows are expanded
@@ -57,10 +58,11 @@ PanelWindow {
 
     readonly property color warning: "#dfaf87"   // same amber as nvim/yazi's palette
 
-    function toggle(scr, x) {
+    function toggle(scr, x, y) {
         if (visible) { visible = false; return; }
         if (scr) screen = scr;
         if (x !== undefined) anchorX = x;
+        anchorY = y === undefined ? -1 : y;
         expandedNetwork = null;
         detailsFor = "";
         hiddenOpen = false;
@@ -84,7 +86,7 @@ PanelWindow {
             // Screen width, not panel.width: the window isn't mapped yet, so
             // its own width is still 0 here.
             var scr = root.getFocusedScreen();
-            root.toggleNetwork(scr, (scr ? scr.width : 1920) - 200);
+            root.toggleNetwork(scr, (scr ? scr.width : 1920) - 200, -1);
         }
     }
 
@@ -478,8 +480,8 @@ PanelWindow {
         id: card
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 380
-        x: Math.max(12, Math.min(panel.width - width - 12, panel.anchorX - width / 2))
-        y: 48
+        x: BarState.panelX(panel.width, width, "end", panel.anchorX)
+        y: BarState.panelY(panel.height, height, "end", panel.anchorY)
         height: Math.min(content.implicitHeight + 20, panel.height - 64)
         color: Theme.glassBg
         radius: 14

@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import qs.services
 
 PanelWindow {
     id: powerMenuPopup
@@ -111,9 +112,8 @@ PanelWindow {
         scale: powerMenuPopup.visible ? 1 : 0.97
         Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-        anchors { top: parent.top; right: parent.right }
-        anchors.topMargin: 52
-        anchors.rightMargin: 16
+        x: BarState.panelX(powerMenuPopup.width, width, "end")
+        y: BarState.panelY(powerMenuPopup.height, height, "end")
         width: 290
         height: 54
         color: Theme.glassBg

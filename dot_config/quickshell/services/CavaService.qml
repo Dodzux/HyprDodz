@@ -30,7 +30,7 @@ Singleton {
                 || /^(youtube[ -]?music|com\.google\.YoutubeMusic)$/i.test(app || "");
         }
         function titleSite(title) {
-            var clean = String(title || "").trim().replace(/^\(\d+\)\s*/, "").replace(/\s+[—–-]\s+(?:Brave|Google Chrome|Chromium|Mozilla Firefox|Firefox|Zen Browser)(?:\s+Browser)?$/i, "");
+            var clean = String(title || "").replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim().replace(/^\(\d+\)\s*/, "").replace(/\s+[—–-]\s+(?:Brave(?:\s*(?:[—–|+\-]\s*)?Origin)?|Google Chrome|Chromium|Mozilla Firefox|Firefox|Zen Browser)(?:\s+Browser)?$/i, "");
             if (/(?:^|[—–|\-]\s*)YouTube Music$/i.test(clean)) return "youtube-music";
             if (/(?:^|[—–|\-]\s*)YouTube$/i.test(clean)) return "youtube";
             return "";
@@ -193,6 +193,19 @@ Singleton {
     }
     IpcHandler {
         target: "cava"
+        function siteStatus(): string {
+            function brief(w) {
+                if (!w) return null;
+                var title = String(w.title || "");
+                return {appId: w.appId, browser: siteMode.browser(w.appId), site: siteMode.titleSite(title),
+                    mentionsYouTube: title.includes("YouTube"), mentionsMusic: title.includes("YouTube Music"),
+                    afterYouTube: title.includes("YouTube") ? title.split("YouTube").pop().length : -1,
+                    braveOrigin: /Brave Origin$/.test(title), braveParentheses: /Brave \(Origin\)$/.test(title),
+                    braveHyphen: /Brave [—–-] Origin$/.test(title)};
+            }
+            return JSON.stringify({focused: brief(siteMode.focusedWindow), detected: siteMode.detectedSite,
+                applied: siteMode.appliedSite, windows: siteMode.windows.map(brief)});
+        }
         function status(): string { return JSON.stringify({running: backend.running, active: service.active, playback: service.playback, paused: service.paused, resuming: service.resuming, mode: service.mirrored ? "mirror" : "smooth", site: service.selectedSite, sensitivity: service.sensitivity, frames: service.frames, peak: service.peak, source: service.captureSource, error: service.errorMessage}); }
         function togglePaused(): void { service.paused = !service.paused; }
         function setMode(mode: string): void { if (mode === "smooth" || mode === "mirror") service.mirrored = mode === "mirror"; }

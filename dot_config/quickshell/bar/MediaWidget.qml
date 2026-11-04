@@ -20,16 +20,17 @@ BarItem {
     readonly property bool spectrumShown: !CavaService.paused && (CavaService.active || CavaService.resuming)
     property real spectrumProgress: spectrumShown ? 1 : 0
     readonly property bool layoutAnimating: spectrumTransition.running
-    readonly property real playPrefix: hasTrack ? 21 : 0
+    readonly property real playPrefix: hasTrack && !verticalBar ? 21 : 0
     Behavior on spectrumProgress { NumberAnimation { id: spectrumTransition; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
     property real popupAnchorX: 0
     visible: hasMedia
-    width: visible ? Math.min(maximumWidth, 20 + playPrefix + miniSpectrum.width + mediaText.width) : 0
+    width: visible ? (verticalBar ? 44 : Math.min(maximumWidth, 20 + playPrefix + miniSpectrum.width + mediaText.width)) : 0
     holdDetails: menu.visible
     selected: menu.visible
     Accessible.role: Accessible.Button
     Accessible.name: "Music and audio visualizer"
     Accessible.onPressAction: toggleMedia()
+    function closePopup() { menu.visible = false; }
     function toggleMedia() {
         if (activePlayer && activePlayer.canTogglePlaying) activePlayer.togglePlaying();
         else toggleVisualizer();
@@ -84,7 +85,7 @@ BarItem {
     Item {
         id: contentRow
         anchors.left: parent.left
-        anchors.leftMargin: 10
+        anchors.leftMargin: verticalBar ? 6 : 10
         anchors.verticalCenter: parent.verticalCenter
         width: Math.max(0, mediaWidget.width - 20)
         height: 26
@@ -92,7 +93,7 @@ BarItem {
             id: playButton
             width: visible ? 15 : 0
             height: 26
-            visible: mediaWidget.hasTrack
+            visible: mediaWidget.hasTrack && !mediaWidget.verticalBar
             Text { anchors.centerIn: parent; text: mediaWidget.isPlaying ? "󰐊" : "󰏤"; color: Theme.text; font.family: Theme.fontMain; font.pixelSize: 14 }
             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: mediaWidget.toggleMedia() }
         }
@@ -101,12 +102,12 @@ BarItem {
             objectName: "mini-cava-spectrum"
             x: mediaWidget.playPrefix
             y: 1
-            width: 82 * mediaWidget.spectrumProgress
+            width: (mediaWidget.verticalBar ? 32 : 82) * mediaWidget.spectrumProgress
             height: 24
             visible: width > 0
             opacity: mediaWidget.spectrumProgress
             clip: true
-            Spectrum { width: 76; height: 18; y: 3; count: 16 }
+            Spectrum { width: mediaWidget.verticalBar ? 32 : 76; height: 18; y: 3; count: mediaWidget.verticalBar ? 8 : 16 }
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
@@ -117,7 +118,7 @@ BarItem {
         Text {
             id: mediaText
             x: mediaWidget.playPrefix + miniSpectrum.width
-            width: Math.max(0, Math.min(implicitWidth, mediaWidget.maximumWidth - 20 - mediaWidget.playPrefix - miniSpectrum.width))
+            width: mediaWidget.verticalBar ? Math.max(0, 32 - miniSpectrum.width) : Math.max(0, Math.min(implicitWidth, mediaWidget.maximumWidth - 20 - mediaWidget.playPrefix - miniSpectrum.width))
             height: 26
             verticalAlignment: Text.AlignVCenter
             text: mediaWidget.hasTrack ? activePlayer.trackTitle + (activePlayer.trackArtist ? " - " + activePlayer.trackArtist : "") : "Desktop audio"
@@ -149,9 +150,9 @@ BarItem {
         visible: false
         grabFocus: true
         anchor.item: mediaWidget
-        anchor.rect.x: mediaWidget.popupAnchorX
-        anchor.rect.y: mediaWidget.height + 12
-        anchor.gravity: Edges.Bottom
+        anchor.rect.x: BarState.popupX(mediaWidget.width)
+        anchor.rect.y: BarState.popupY(mediaWidget.height)
+        anchor.gravity: BarState.popupGravity
         color: "transparent"
         implicitWidth: 306
         implicitHeight: 216

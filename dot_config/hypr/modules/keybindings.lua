@@ -33,6 +33,8 @@ function cheatsheet.run(mask, key)
     if action then hl.dispatch(action) end
 end
 
+local lock_safe_binds = {}
+
 local function bind(keys, action, opts)
     local parts = {}
     for part in keys:gmatch("[^+]+") do
@@ -43,6 +45,9 @@ local function bind(keys, action, opts)
         mask = mask + (MOD_MASKS[parts[i]:upper()] or 0)
     end
     cheatsheet.actions[mask .. ":" .. parts[#parts]] = action
+    if opts and opts.locked then
+        lock_safe_binds[#lock_safe_binds + 1] = { keys = keys, action = action, opts = opts }
+    end
     return hl.bind(keys, action, opts)
 end
 
@@ -197,9 +202,16 @@ bind(m .. " + CTRL + right", hl.dsp.window.move({ direction = "r" }), { descript
 bind(m .. " + CTRL + up",    hl.dsp.window.move({ direction = "u" }), { description = "Windows: Move window up" })
 bind(m .. " + CTRL + down",  hl.dsp.window.move({ direction = "d" }), { description = "Windows: Move window down" })
 
+
+-- Place the bar directly on the requested screen edge.
+bind(m .. " + ALT + up", hl.dsp.global("quickshell:bar-top"), { description = "Panels: Bar at top" })
+bind(m .. " + ALT + down", hl.dsp.global("quickshell:bar-bottom"), { description = "Panels: Bar at bottom" })
+bind(m .. " + ALT + left", hl.dsp.global("quickshell:bar-left"), { description = "Panels: Bar at left" })
+bind(m .. " + ALT + right", hl.dsp.global("quickshell:bar-right"), { description = "Panels: Bar at right" })
+
 -- ▓▒░ MULTI-MONITOR (matters once a laptop is docked)
-bind(m .. " + ALT + left",  hl.dsp.focus({ monitor = "-1" }), { description = "Workspaces: Focus previous monitor" })
-bind(m .. " + ALT + right", hl.dsp.focus({ monitor = "+1" }), { description = "Workspaces: Focus next monitor" })
+bind(m .. " + CTRL + ALT + left",  hl.dsp.focus({ monitor = "-1" }), { description = "Workspaces: Focus previous monitor" })
+bind(m .. " + CTRL + ALT + right", hl.dsp.focus({ monitor = "+1" }), { description = "Workspaces: Focus next monitor" })
 bind(m .. " + ALT + SHIFT + left",  hl.dsp.window.move({ monitor = "-1" }), { description = "Workspaces: Move window to previous monitor" })
 bind(m .. " + ALT + SHIFT + right", hl.dsp.window.move({ monitor = "+1" }), { description = "Workspaces: Move window to next monitor" })
 
@@ -219,3 +231,76 @@ bind(m .. " + I", hl.dsp.exec_cmd("hyprpicker -a"), { description = "Capture: Pi
 
 -- ▓▒░ RELOAD CONFIG
 bind(m .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "System: Reload Hyprland config" })
+
+-- BEGIN HYPRLOCK KEYBOARD NAVIGATION
+-- These maps are entered only by the active Hyprlock helper and reset on unlock.
+-- Only fixed UI commands are written; password text stays entirely in Hyprlock.
+local function lock_control(command, target)
+    local runtime = os.getenv("XDG_RUNTIME_DIR")
+    if not runtime or runtime == "" then
+        hl.dispatch(hl.dsp.submap("reset"))
+        return
+    end
+    local queue = io.open(runtime .. "/hyprlock-buttons/commands", "a")
+    if not queue then
+        hl.dispatch(hl.dsp.submap("reset"))
+        return
+    end
+    queue:write(command .. "\n")
+    queue:close()
+    if target then hl.dispatch(hl.dsp.submap(target)) end
+end
+
+local function define_lock_navigation(name, buttons_focused)
+    hl.define_submap(name, function()
+        -- Retain all existing lock-safe controls, including Super+K and volume.
+        for _, entry in ipairs(lock_safe_binds) do
+            hl.bind(entry.keys, entry.action, entry.opts)
+        end
+        local navigation_keys = {
+            { "Tab", "tab-next" }, { "SHIFT + Tab", "tab-prev" },
+            { "right", "next" }, { "down", "next" },
+            { "left", "prev" }, { "up", "prev" },
+        }
+        for _, entry in ipairs(navigation_keys) do
+            local command = entry[2]
+            hl.bind(entry[1], function()
+                lock_control(command, "hyprlock-power")
+            end, { locked = true, description = "System: Lock screen power navigation" })
+        end
+        if buttons_focused then
+            for _, key in ipairs({ "Return", "KP_Enter", "space" }) do
+                hl.bind(key, function()
+                    lock_control("activate", "hyprlock-input")
+                end, { locked = true, description = "System: Activate selected lock screen power button" })
+            end
+            hl.bind("Escape", function()
+                lock_control("clear", "hyprlock-input")
+            end, { locked = true, description = "System: Return to lock screen password" })
+
+            -- Pass ordinary key presses through unchanged while immediately
+            -- restoring password focus. Physical codes cover US/Arabic/IME keys
+            -- without inspecting or recording the characters being typed.
+            -- Keep modifiers and navigation/activation keys in the button map.
+            local retained_codes = {
+                [9] = true, [23] = true, [36] = true, [65] = true, [104] = true,
+                [111] = true, [113] = true, [114] = true, [116] = true,
+                [37] = true, [50] = true, [62] = true, [64] = true, [66] = true,
+                [77] = true, [78] = true, [92] = true, [105] = true,
+                [108] = true, [133] = true, [134] = true,
+            }
+            for code = 8, 255 do
+                if not retained_codes[code] then
+                    hl.bind("code:" .. code, function()
+                        lock_control("clear", "hyprlock-input")
+                    end, { locked = true, ignore_mods = true, non_consuming = true,
+                           description = "System: Resume lock screen password entry" })
+                end
+            end
+        end
+    end)
+end
+
+define_lock_navigation("hyprlock-input", false)
+define_lock_navigation("hyprlock-power", true)
+-- END HYPRLOCK KEYBOARD NAVIGATION

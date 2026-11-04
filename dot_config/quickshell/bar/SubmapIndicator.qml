@@ -6,20 +6,21 @@ Rectangle {
     id: submapWidget
 
     property string submap: ""
+    property bool verticalBar: false
 
     height: 28
     width: submapText.implicitWidth + 16
     radius: 4
     antialiasing: true
     color: "transparent"
-    visible: submap !== "" && submap !== "default"
+    visible: !verticalBar && submapWidget.submap !== "" && submapWidget.submap !== "default"
 
     Text {
         id: submapText
         anchors.centerIn: parent
         text: submapWidget.submap.toUpperCase()
         color: Theme.accent
-        
+
         font.family: Theme.fontMain
         font.pixelSize: 12
         font.weight: Font.ExtraBold

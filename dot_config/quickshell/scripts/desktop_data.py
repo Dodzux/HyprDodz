@@ -33,25 +33,42 @@ def shortcuts():
     return result
 
 
+def monitor_work_area(monitor):
+    """Logical desktop rectangle, excluding layer-shell reserved margins."""
+    scale = monitor.get("scale", 1) or 1
+    width, height = monitor["width"] / scale, monitor["height"] / scale
+    if monitor.get("transform", 0) % 2:
+        width, height = height, width
+    reserved = list(monitor.get("reserved") or [])
+    reserved = (reserved + [0, 0, 0, 0])[:4]
+    left, top, right, bottom = (max(0, float(v)) for v in reserved)
+    return {"x": monitor.get("x", 0) + left, "y": monitor.get("y", 0) + top,
+            "width": max(1, width - left - right), "height": max(1, height - top - bottom)}
+
+
 def workspaces():
     monitors = {m["id"]: m for m in hypr_json("monitors")}
     result = []
     for client in hypr_json("clients"):
-        if not client.get("mapped") or client.get("hidden") or client["workspace"]["id"] < 1:
+        workspace = client.get("workspace") or {}
+        try:
+            number = int(workspace.get("id", workspace.get("name", "0")))
+        except (TypeError, ValueError):
+            continue
+        if not client.get("mapped") or client.get("hidden") or number < 1:
             continue
         monitor = monitors.get(client["monitor"])
         if not monitor:
             continue
-        width, height = monitor["width"] / monitor["scale"], monitor["height"] / monitor["scale"]
-        if monitor.get("transform", 0) % 2:
-            width, height = height, width
+        area = monitor_work_area(monitor)
+        width, height = area["width"], area["height"]
         # App identity and rectangles suffice: no screenshots or document titles.
         result.append({"address": client["address"], "pid": client["pid"], "class": client["class"], "aspect": width / height,
                        "workspace": str(client["workspace"]["name"]),
-                       "x": max(0, min(1, (client["at"][0] - monitor["x"]) / width)),
-                       "y": max(0, min(1, (client["at"][1] - monitor["y"]) / height)),
-                       "w": max(0, min(1, (client["at"][0] + client["size"][0] - monitor["x"]) / width) - max(0, (client["at"][0] - monitor["x"]) / width)),
-                       "h": max(0, min(1, (client["at"][1] + client["size"][1] - monitor["y"]) / height) - max(0, (client["at"][1] - monitor["y"]) / height))})
+                       "x": max(0, min(1, (client["at"][0] - area["x"]) / width)),
+                       "y": max(0, min(1, (client["at"][1] - area["y"]) / height)),
+                       "w": max(0, min(1, (client["at"][0] + client["size"][0] - area["x"]) / width) - max(0, (client["at"][0] - area["x"]) / width)),
+                       "h": max(0, min(1, (client["at"][1] + client["size"][1] - area["y"]) / height) - max(0, (client["at"][1] - area["y"]) / height))})
     return result
 
 
@@ -68,7 +85,8 @@ def focus_preview_window(request):
 
 
 def overview_snapshot():
-    return {"monitors": hypr_json("monitors"), "workspaces": hypr_json("workspaces"),
+    monitors = [dict(m, workArea=monitor_work_area(m)) for m in hypr_json("monitors")]
+    return {"monitors": monitors, "workspaces": hypr_json("workspaces"),
             "clients": [c for c in hypr_json("clients")
                         if c.get("mapped") and not c.get("hidden") and c.get("workspace", {}).get("id", 0) > 0]}
 

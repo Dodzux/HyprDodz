@@ -19,7 +19,8 @@ PanelWindow {
     MouseArea { anchors.fill:parent;onClicked:panel.visible=false }
     Rectangle {
         id:card;objectName:"tasks-card"
-        anchors { top:parent.top; right:parent.right; topMargin:71; rightMargin:16 }
+        x: BarState.panelX(panel.width, width, "end")
+        y: BarState.panelY(panel.height, height, "center")
         width:380
         readonly property real chromeHeight: 24 + taskHeader.implicitHeight + taskEntry.implicitHeight + content.spacing * 2 + (saveError.visible ? saveError.implicitHeight + content.spacing : 0)
         readonly property real wantedListHeight: DesktopState.tasks.length ? taskList.contentHeight : 48

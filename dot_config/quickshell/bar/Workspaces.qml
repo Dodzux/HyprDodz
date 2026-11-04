@@ -7,8 +7,11 @@ import Quickshell.Hyprland
 import qs
 import qs.services
 
-Row {
+Grid {
     id: workspaces
+    property bool vertical: false
+    columns: vertical ? 1 : 10
+    horizontalItemAlignment: Grid.AlignHCenter
     spacing: 0
     required property var parentWindow
     property int editingId:0
@@ -37,6 +40,7 @@ Row {
         PanelWindow {
             id:outsideClick;required property var modelData
             screen:modelData;color:"transparent";exclusiveZone:-1
+            readonly property rect editorRect:workspaces.nameEditor?workspaces.parentWindow.itemRect(workspaces.nameEditor.parent):Qt.rect(0,0,0,0)
             anchors {top:true;bottom:true;left:true;right:true}
             WlrLayershell.layer:WlrLayer.Overlay
             WlrLayershell.namespace:"quickshell-workspace-edit-dismiss"
@@ -45,9 +49,9 @@ Row {
                 width:outsideClick.width;height:outsideClick.height
                 Region {
                     intersection:Intersection.Subtract
-                    x:workspaces.parentWindow.margins.left;y:workspaces.parentWindow.margins.top
-                    width:outsideClick.modelData.name===workspaces.parentWindow.screen.name?workspaces.parentWindow.width:0
-                    height:workspaces.parentWindow.height
+                    x:workspaces.parentWindow.screenX+outsideClick.editorRect.x;y:workspaces.parentWindow.screenY+outsideClick.editorRect.y
+                    width:outsideClick.modelData.name===workspaces.parentWindow.screen.name?outsideClick.editorRect.width:0
+                    height:outsideClick.editorRect.height
                 }
             }
             MouseArea {anchors.fill:parent;acceptedButtons:Qt.AllButtons;onPressed:event=>{event.accepted=true;workspaces.endName(false);}}
@@ -145,7 +149,9 @@ Row {
     PopupWindow {
         id: preview
         anchor.item: workspaces
-        anchor.rect.y: anchor.item ? anchor.item.height + 8 : 0
+        anchor.rect.x: anchor.item ? BarState.popupX(anchor.item.width) : 0
+        anchor.rect.y: anchor.item ? BarState.popupY(anchor.item.height) : 0
+        anchor.gravity: BarState.popupGravity
         implicitWidth: peek.implicitWidth
         implicitHeight: peek.implicitHeight
         color: "transparent"
@@ -234,8 +240,8 @@ Row {
             property real reveal: workspaces.isShown(wsId) ? 1 : 0
             Behavior on reveal { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
-            width: (gap + wsRect.width) * reveal
-            height: 28
+            width: workspaces.vertical ? 44 : (gap + wsRect.width) * reveal
+            height: workspaces.vertical ? 28 * reveal : 28
             opacity: reveal
             visible: reveal > 0   // hidden slots also drop out of Tab focus
             clip: true
@@ -249,9 +255,10 @@ Row {
                 readonly property bool isFocused: workspaces.focusedName === String(wsId)
                 readonly property bool isOccupied: workspaces.occupied[String(wsId)] === true
 
-                anchors.right: parent.right
+                anchors.right: workspaces.vertical ? undefined : parent.right
+                anchors.horizontalCenter: workspaces.vertical ? parent.horizontalCenter : undefined
                 anchors.verticalCenter: parent.verticalCenter
-                width: editing ? Math.min(180,Math.max(60,wsNameEditor.implicitWidth+18)) : (isFocused ? Math.min(160,Math.max(38, wsLabel.implicitWidth + 18)) : 16)
+                width: workspaces.vertical ? 44 : editing ? Math.min(180,Math.max(60,wsNameEditor.implicitWidth+18)) : (isFocused ? Math.min(160,Math.max(38, wsLabel.implicitWidth + 18)) : 16)
                 height: 28
                 radius: Theme.widgetRadius
                 antialiasing: true

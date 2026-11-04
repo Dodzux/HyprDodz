@@ -146,10 +146,10 @@ hl.window_rule({
     center = true,
 })
 
--- Match Kitty/Codex to Planner's 70% glass reference; share desktop blur.
+-- Match Kitty, Codex, and Ghostty to the shared 70% glass reference.
 hl.window_rule({
     name   = "terminal-planner-glass",
-    match  = { class = "^(kitty|codex)$" },
+    match  = { class = "^(kitty|codex|com[.]mitchellh[.]ghostty)$" },
     opacity = "0.70 override 0.70 override 0.70 override",
     opaque = false,
     no_blur = false,

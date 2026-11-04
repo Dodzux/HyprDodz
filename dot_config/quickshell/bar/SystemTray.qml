@@ -3,9 +3,11 @@ import Quickshell
 import Quickshell.Services.SystemTray
 import qs
 
-Row {
+Grid {
     id: systemTrayWidget
 
+    property bool vertical: false
+    columns: vertical ? 1 : Math.max(1, SystemTray.items.values.length)
     spacing: 6
 
     required property var parentWindow
@@ -43,7 +45,7 @@ Row {
                     }
                     if (modelData.hasMenu) {
                         var pos=trayItem.mapToItem(systemTrayWidget.parentWindow.contentItem,trayItem.width/2,0);
-                        root.showTrayMenu(systemTrayWidget.parentWindow.screen,modelData,pos.x);
+                        root.showTrayMenu(systemTrayWidget.parentWindow.screen,modelData,systemTrayWidget.parentWindow.screenX + pos.x,systemTrayWidget.parentWindow.screenY + pos.y);
                     }
                 }
             }

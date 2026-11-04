@@ -7,12 +7,13 @@ import qs
 
 ListView {
     id: taskbar
-    orientation: ListView.Horizontal
+    property bool vertical: false
+    orientation: vertical ? ListView.Vertical : ListView.Horizontal
     spacing: 6
     interactive: false
     clip: false
-    implicitWidth: Math.max(0, count * 34 - 6)
-    implicitHeight: 28
+    implicitWidth: vertical ? 28 : Math.max(0, count * 34 - 6)
+    implicitHeight: vertical ? Math.max(0, count * 34 - 6) : 28
     width: implicitWidth
     height: implicitHeight
     model: ToplevelManager.toplevels
@@ -20,7 +21,7 @@ ListView {
         NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
     }
     remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
-    displaced: Transition { NumberAnimation { properties: "x"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+    displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
 
     // App-identity overrides, keyed on the Wayland appId only — never on the
@@ -191,7 +192,7 @@ ListView {
                     visible: parent.status === Image.Error || !parent.source
                 }
             }
-            
+
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton

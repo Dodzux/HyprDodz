@@ -42,7 +42,7 @@ BarItem {
         // Centre of this item in screen coordinates: the bar window starts at
         // its left margin (Bar.qml `margins.left`).
         var r = parentWindow.itemRect(widget);
-        root.toggleNetwork(parentWindow.screen, parentWindow.margins.left + r.x + r.width / 2);
+        root.toggleNetwork(parentWindow.screen, parentWindow.screenX + r.x + r.width / 2, parentWindow.screenY + r.y + r.height / 2);
     }
 
     panelTargetWidth: networkIcon.implicitWidth + 16 + ((!compact || detailsRequested || detailsShown) && NetworkService.type !== "none" ? speeds.implicitWidth + 8 : 0)
