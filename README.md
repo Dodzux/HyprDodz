@@ -28,7 +28,7 @@ chezmoi apply --interactive --exclude=scripts
 
 Initialization asks for the name shown on the lock screen and greeter, and detects the GPU vendor. A machine without a matching host profile uses automatic monitor settings.
 
-Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave Origin** is installed separately (`brave-origin-bin` on my machine); optional personal apps such as Codex also need their own installation.
+Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave Origin** is installed separately (`brave-origin-bin` on my machine); optional personal apps such as Codex and Herdr also need their own installation.
 
 For full setup, review [scripts/bootstrap.sh](scripts/bootstrap.sh). It upgrades the system, installs packages and GPU drivers, configures Fish, SDDM and services, and force-applies the configs:
 
@@ -46,14 +46,14 @@ For manual setup, `~/.config/hypr/scripts/bootstrap.sh` configures desktop user 
 | --- | --- | --- |
 | Compositor | Hyprland | Modular Lua config, launched directly |
 | Greeter | SDDM | Custom `hypr-sddm` theme |
-| Bar & panels | Quickshell | QML bar, launcher, clipboard, notifications, overview and wallpaper selector |
+| Bar & panels | Quickshell | Bar on any screen edge, launcher, clipboard, notifications, overview and wallpaper selector |
 | Planning | Quickshell | Planner, tasks and workspace names saved locally |
 | Display & media | Hyprsunset + CAVA | Night light, extra dimming and media visualizer |
 | Terminal | Kitty | Default terminal; Ghostty settings are also included |
-| Shell | Fish + Starship | Modular shell files and a custom prompt |
+| Shell | Fish | Custom prompt, syntax colors and Zoxide navigation |
 | Editor | Neovim + NvChad | Lua configuration, plugins and language tooling |
 | File manager | Yazi | Opens inside Kitty |
-| Browser | Brave | Default browser on `SUPER + B` |
+| Browser | Brave Origin | Default browser on `SUPER + B` |
 | Wallpaper | awww | Animated wallpapers and random transitions |
 | Lock & idle | hyprlock + hypridle | Lock screen, idle blanking and display power management |
 | GTK & Qt | Graphite-Dark + Kvantum + qt6ct | Dark appearance with wallpaper accents |
@@ -160,7 +160,7 @@ The full bootstrap reads [packages/](packages/). App settings and package instal
 | `90-networking.txt` | NetworkManager, Bluetooth, OpenSSH and firewall tools |
 | `95-extra.txt` | Additional desktop utilities |
 
-Firefox remains in the application list; Brave is the configured browser. Theme assets are bundled in the repo, while bootstrap can fetch Graphite-Dark if it is missing.
+Firefox remains in the application list; Brave Origin is the configured browser. Theme assets are bundled in the repo, while bootstrap can fetch Graphite-Dark if it is missing.
 
 ---
 
@@ -172,16 +172,21 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | --- | --- |
 | `SUPER` + `T` | Open Kitty |
 | `SUPER` + `E` | Open Yazi in Kitty |
-| `SUPER` + `B` | Open Brave |
+| `SUPER` + `B` | Open Brave Origin |
 | `SUPER` + `C` | Open Neovim in Kitty |
 | `SUPER` + `X` | Open Codex in Kitty, if installed |
+| `SUPER` + `R` | Open Herdr, if installed |
 | `SUPER` + `O` | Open Obsidian |
 | `SUPER` + `U` | Run `sudo pacman -Syu` in Kitty to update the system |
 | `SUPER` + `A` | Show/hide the app launcher |
 | `SUPER` + `F` | Toggle keyboard focus on the bar |
 | `SUPER` + `Space` | Show/hide the wallpaper selector |
 | `SUPER` + `V` | Show/hide clipboard history |
+| `SUPER` + `,` | Show/hide notification history and its Do Not Disturb control |
+| `SUPER` + &#96; | Show/hide the window/workspace overview |
 | `SUPER` + `H` | Show/hide the interactive shortcut list |
+| `SUPER` + `Alt` + `↑` / `↓` / `←` / `→` | Place the bar at the top / bottom / left / right |
+| `SUPER` + `Ctrl` + `Alt` + `←` / `→` | Focus the previous / next monitor |
 | `SUPER` + `Backspace` | Show/hide the menu for lock, suspend, logout, restart and shutdown |
 | `SUPER` + `S` | Show/hide the `terminal` special workspace |
 | `SUPER` + `N` | Show/hide the `notes` special workspace |
@@ -196,6 +201,10 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | `SUPER` + `Print` | Capture the focused monitor and push the README preview; close all windows first |
 
 Edit shortcuts in [modules/keybindings.lua](dot_config/hypr/modules/keybindings.lua) and app commands in [modules/variables.lua](dot_config/hypr/modules/variables.lua).
+
+Right-click the bar clock to open Tasks, then select **Open Planner** for the Quickshell planner.
+
+On the lock screen, use `Tab` / `Shift` + `Tab` or arrow keys to select a power button, `Enter` / `Space` to activate it, and `Esc` to return to the password field.
 
 ---
 
