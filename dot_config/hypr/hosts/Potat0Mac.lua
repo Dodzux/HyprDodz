@@ -10,6 +10,9 @@ return {
     env = {},
     -- The shared US/Arabic keyboard and touchpad settings already fit this laptop.
     input = {},
-    apps = {},
+    apps = {
+        fnLock = 'python3 "$HOME/.config/hypr/scripts/fn_mode.py"',
+        performanceMode = 'python3 "$HOME/.config/hypr/scripts/performance_mode.py"',
+    },
     devices = {},
 }

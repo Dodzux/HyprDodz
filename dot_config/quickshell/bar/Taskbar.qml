@@ -7,12 +7,13 @@ import qs
 
 ListView {
     id: taskbar
-    orientation: ListView.Horizontal
+    property bool vertical: false
+    orientation: vertical ? ListView.Vertical : ListView.Horizontal
     spacing: 6
     interactive: false
     clip: false
-    implicitWidth: Math.max(0, count * 34 - 6)
-    implicitHeight: 28
+    implicitWidth: vertical ? 28 : Math.max(0, count * 34 - 6)
+    implicitHeight: vertical ? Math.max(0, count * 34 - 6) : 28
     width: implicitWidth
     height: implicitHeight
     model: ToplevelManager.toplevels
@@ -20,7 +21,7 @@ ListView {
         NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal }
     }
     remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
-    displaced: Transition { NumberAnimation { properties: "x"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+    displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
 
 
     // App-identity overrides, keyed on the Wayland appId only — never on the
@@ -90,6 +91,9 @@ ListView {
         }
         if (!id) return "application-x-executable";
 
+        // Planner shares the shell's appId, so identify this owned window by its exact title.
+        if (id === "org.quickshell" && title === "Planner") return Quickshell.shellDir + "/assets/planner.svg";
+        if (id === "org.quickshell" && title === "Notebook") return Quickshell.shellDir + "/assets/notebook.svg";
         if (id.includes("antigravity")) return "";
 
         for (let i = 0; i < appIdOverrides.length; i++) {
@@ -126,6 +130,8 @@ ListView {
         // BarItem: the bar's shared hover / focus / press look (accent tint).
         delegate: BarItem {
             id: taskItem
+            color: "transparent"
+            border.width: 0
             required property var modelData
             enabled: modelData !== null
             width: 28
@@ -167,7 +173,7 @@ ListView {
                 source: {
                     const id = (modelData ? modelData.appId || "" : "").toLowerCase();
                     const isTerminal = taskbar.terminalAppIds.some(t => id.includes(t));
-                    return taskbar.getAppIcon(isTerminal && modelData ? modelData.title : "", modelData ? modelData.appId : "");
+                    return taskbar.getAppIcon((isTerminal || id === "org.quickshell") && modelData ? modelData.title : "", modelData ? modelData.appId : "");
                 }
 
                 // Pacman remains yellow; pellets follow the live theme accent.
@@ -187,7 +193,7 @@ ListView {
                     visible: parent.status === Image.Error || !parent.source
                 }
             }
-            
+
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton

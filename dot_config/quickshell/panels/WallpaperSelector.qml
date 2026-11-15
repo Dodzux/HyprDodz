@@ -6,13 +6,14 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
-import qs.services
 
 PanelWindow {
     id: wallpaperWindow
     visible: false
     function choose(item) {
-        Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/awww_transition.sh", item.path]);
+        Quickshell.execDetached(["systemd-run", "--user", "--scope", "--quiet", "--collect",
+                                "--slice=app.slice", "--description=Wallpaper switch", "bash",
+                                Quickshell.env("HOME") + "/.config/hypr/scripts/awww_transition.sh", item.path]);
         visible = false;
     }
 
@@ -25,11 +26,125 @@ PanelWindow {
     color: "transparent"
     
 
+    property bool keyboardSelection: false
+    property point lastPointerPosition: Qt.point(-1, -1)
+    property bool repeatedNavigation: false
+    property double lastNavigationStep: 0
+    property int lastNavigationKey: 0
+    Timer { id: repeatSettle; interval: 80; onTriggered: wallpaperWindow.repeatedNavigation = false }
+    property var navigationKeys: ({})
+    readonly property bool navigationHeld: Object.keys(navigationKeys).length > 0
+    function pressNavigation(event) {
+        repeatSettle.stop();
+        var repeated = navigationKeys[event.key] || event.isAutoRepeat;
+        if (repeated) repeatedNavigation = true;
+        var next = Object.assign({}, navigationKeys); next[event.key] = true;
+        navigationKeys = next; keyboardSelection = true; event.accepted = true;
+        // Large thumbnail rows cannot follow terminal-speed key repeat. Pace
+        // repeats without queuing stale moves that would run after release.
+        var now = Date.now();
+        if (repeated && lastNavigationKey === event.key && now - lastNavigationStep < 70) return false;
+        lastNavigationStep = now;
+        lastNavigationKey = event.key;
+        return true;
+    }
+    function releaseNavigation(event) {
+        if (event.isAutoRepeat || !navigationKeys[event.key]) return;
+        var next = Object.assign({}, navigationKeys); delete next[event.key];
+        navigationKeys = next;
+        if (!navigationHeld) repeatSettle.restart();
+        event.accepted = true;
+    }
+
     property var wallpapers: []
-    property var filteredWallpapers: {
-        var q = searchInput.text.toLowerCase().trim()
+    property var assets: ({})
+    property bool loading: false
+    property string loadingError: ""
+    property real revealProgress: 0
+    // Empty = the category overview. Any other value is a folder name under
+    // ~/Pictures/Wallpapers. Category folders are discovered, never hardcoded.
+    property string currentCategory: ""
+    function categoryLabel(name) { return name ? String(name).replace(/_/g, " ") : "Unsorted"; }
+    function showCategories() {
+        currentCategory = "";
+        searchInput.text = "";
+        gridList.tileIndex = 0;
+        gridList.positionViewAtBeginning();
+        searchInput.forceActiveFocus();
+    }
+    function openCategory(name) {
+        currentCategory = name;
+        searchInput.text = "";
+        gridList.tileIndex = 0;
+        gridList.positionViewAtBeginning();
+        searchInput.forceActiveFocus();
+    }
+    function refresh() {
+        if (findProc.running) return;
+        loading = true;
+        loadingError = "";
+        findProc.running = true;
+    }
+    function acceptUpdate(line) {
+        try {
+            var update = JSON.parse(line);
+            if (update.type === "list") {
+                var nextAssets = {};
+                var entries = update.items.map(item => {
+                    nextAssets[item.path] = item;
+                    return {path: item.path, name: item.name, category: item.category || ""};
+                });
+                assets = nextAssets;
+                // Asset arrivals never rebuild the grid or reset keyboard selection.
+                if (JSON.stringify(entries) !== JSON.stringify(wallpapers)) wallpapers = entries;
+            } else if (update.type === "asset") {
+                var next = Object.assign({}, assets);
+                next[update.item.path] = update.item;
+                assets = next;
+            } else if (update.type === "done") loading = false;
+            else if (update.type === "error") { loading = false; loadingError = update.message; }
+        } catch (error) { console.warn("Wallpaper preview:", error); }
+    }
+    Timer { interval: 700; running: true; onTriggered: wallpaperWindow.refresh() }
+    onVisibleChanged: {
+        navigationKeys = ({});
+        repeatSettle.stop();
+        repeatedNavigation = false;
+        if (visible) {
+            keyboardSelection = false;
+            currentCategory = "";
+            reveal.restart();
+            searchInput.forceActiveFocus();
+        }
+        else { reveal.stop(); revealProgress = 0; }
+    }
+    NumberAnimation { id: reveal; target: wallpaperWindow; property: "revealProgress"; from: 0; to: 1; duration: Theme.motionNormal; easing.type: Easing.OutCubic }
+    // One entry per folder, with the first wallpaper as its cover. The selector
+    // shows this first; opening a category swaps the grid to its wallpapers.
+    readonly property var categories: {
+        var buckets = {}, order = [];
+        for (var i = 0; i < wallpapers.length; i++) {
+            var item = wallpapers[i];
+            var key = item.category || "";
+            if (!buckets[key]) {
+                buckets[key] = { kind: "category", key: "category:" + key, name: key,
+                                 coverPath: item.path, count: 0 };
+                order.push(key);
+            }
+            buckets[key].count++;
+        }
+        return order.sort(function(a, b) {
+            return categoryLabel(a).localeCompare(categoryLabel(b));
+        }).map(function(key) { return buckets[key]; });
+    }
+    readonly property var filteredCategories: categories
+    readonly property var filteredWallpapers: {
+        if (currentCategory === "") return [];
         return wallpapers.filter(function(item) {
-            return !q || item.name.toLowerCase().includes(q);
+            return (item.category || "") === currentCategory;
+        }).map(function(item) {
+            return { kind: "wallpaper", key: item.path, path: item.path,
+                     name: item.name, category: item.category || "" };
         }).sort(function(a, b) {
             // Numbered variants belong under the wallpaper name (Rain World → R).
             var nameA = a.name.toLowerCase().replace(/^\d+[\s._-]+/, "");
@@ -39,16 +154,38 @@ PanelWindow {
                 || a.path.localeCompare(b.path);
         });
     }
+    // A non-empty query searches every folder, so a wallpaper can be applied
+    // without opening its category first. Terms may match the filename, the
+    // category, or both ("nature mountain").
+    readonly property bool searching: searchInput.text.trim() !== ""
+    readonly property var searchResults: {
+        var terms = searchInput.text.toLowerCase().trim().split(/\s+/);
+        if (terms.length === 0 || terms[0] === "") return [];
+        return wallpapers.filter(function(item) {
+            var haystack = (item.name + " " + categoryLabel(item.category || "")).toLowerCase();
+            return terms.every(function(term) { return haystack.includes(term); });
+        }).map(function(item) {
+            return { kind: "wallpaper", key: item.path, path: item.path,
+                     name: item.name, category: item.category || "" };
+        }).sort(function(a, b) {
+            var nameA = a.name.toLowerCase().replace(/^\d+[\s._-]+/, "");
+            var nameB = b.name.toLowerCase().replace(/^\d+[\s._-]+/, "");
+            return nameA.localeCompare(nameB)
+                || a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+                || a.path.localeCompare(b.path);
+        });
+    }
+    readonly property var entries: searching ? searchResults
+        : currentCategory === "" ? filteredCategories : filteredWallpapers
 
     Process {
         id: findProc
-        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "palettes",
+        command: ["python3", Quickshell.shellDir + "/scripts/desktop_data.py", "wallpapers",
                   "--cache", Quickshell.env("HOME") + "/.cache/quickshell/wallpaper-palettes"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try { wallpaperWindow.wallpapers = JSON.parse(this.text); }
-                catch (error) { console.warn("Wallpaper palette:", error); }
-            }
+        stdout: SplitParser { onRead: line => wallpaperWindow.acceptUpdate(line) }
+        onExited: exitCode => {
+            wallpaperWindow.loading = false;
+            if (exitCode !== 0) wallpaperWindow.loadingError = "Could not load wallpaper previews";
         }
     }
 
@@ -61,7 +198,7 @@ PanelWindow {
         id: panelCard
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         width: 840
-        height: Math.min(600, Math.max(160, 12 + headerBox.height + 12 + gridList.contentHeight + 12))
+        height: wallpaperWindow.loading && wallpaperWindow.wallpapers.length === 0 ? 600 : Math.min(600, Math.max(160, 12 + headerBox.height + 12 + Math.ceil(wallpaperWindow.entries.length / 4) * gridList.cellHeight + 12))
         anchors.centerIn: parent
 
         color: Theme.glassBg
@@ -70,18 +207,38 @@ PanelWindow {
         border.color: Theme.glassBorder
         border.width: 1
 
-        opacity: wallpaperWindow.visible ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+        opacity: wallpaperWindow.revealProgress
 
         transform: Translate {
-            y: wallpaperWindow.visible ? 0 : 16
-            Behavior on y { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
+            y: (1 - wallpaperWindow.revealProgress) * 12
         }
 
         MouseArea { 
             anchors.fill: parent
             onClicked: searchInput.forceActiveFocus() 
         } // Block background click and keep focus
+
+        // Viewport scrolling moves tiles under a stationary pointer. Only a
+        // real pointer movement may hand selection back from the keyboard.
+        HoverHandler {
+            id: selectionPointer
+            blocking: false
+            function moved() {
+                if (!hovered) return;
+                var p = point.scenePosition;
+                if (p.x === wallpaperWindow.lastPointerPosition.x && p.y === wallpaperWindow.lastPointerPosition.y) return;
+                wallpaperWindow.lastPointerPosition = Qt.point(p.x, p.y);
+                if (wallpaperWindow.navigationHeld) return;
+                var view = gridList.mapFromItem(panelCard, point.position.x, point.position.y);
+                if (view.x < 0 || view.y < 0 || view.x >= gridList.width || view.y >= gridList.height) return;
+                wallpaperWindow.keyboardSelection = false;
+                var content = gridList.contentItem.mapFromItem(panelCard, point.position.x, point.position.y);
+                var index = gridList.tileAt(content.x, content.y);
+                if (index >= 0) gridList.select(index);
+            }
+            onPointChanged: moved()
+            onHoveredChanged: if (hovered) moved()
+        }
 
         Rectangle {
             id: headerBox
@@ -94,6 +251,29 @@ PanelWindow {
             RowLayout {
                 anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                 spacing: 10
+
+                Rectangle {
+                    id: backButton
+                    visible: wallpaperWindow.currentCategory !== ""
+                    Layout.preferredWidth: 46
+                    Layout.preferredHeight: 26
+                    radius: 6
+                    color: backHover.hovered ? Theme.launcherHoverBg : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                    Text {
+                        anchors.centerIn: parent
+                        text: "‹ All"
+                        color: backHover.hovered ? Theme.accent : Theme.subtext0
+                        font.family: Theme.fontMain
+                        font.pixelSize: 12
+                    }
+                    HoverHandler { id: backHover }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: wallpaperWindow.showCategories()
+                    }
+                }
 
                 TextInput {
                     id: searchInput
@@ -108,7 +288,7 @@ PanelWindow {
 
                     Text {
                         anchors.fill: parent
-                        text: "Search wallpapers..."
+                        text: "Search Wallpapers or Categories..."
                         color: Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 14
@@ -116,15 +296,23 @@ PanelWindow {
                         verticalAlignment: Text.AlignVCenter
                     }
 
-                    Keys.onEscapePressed: wallpaperWindow.visible = false
-                    Keys.onDownPressed:   gridList.moveCurrentIndexDown()
-                    Keys.onUpPressed:     gridList.moveCurrentIndexUp()
-                    Keys.onRightPressed:  gridList.moveCurrentIndexRight()
-                    Keys.onLeftPressed:   gridList.moveCurrentIndexLeft()
+                    Keys.onEscapePressed: {
+                        if (wallpaperWindow.searching) searchInput.text = "";
+                        else if (wallpaperWindow.currentCategory !== "") wallpaperWindow.showCategories();
+                        else wallpaperWindow.visible = false;
+                    }
+                    Keys.onDownPressed: event => { if (wallpaperWindow.pressNavigation(event)) gridList.step(4); }
+                    Keys.onUpPressed: event => { if (wallpaperWindow.pressNavigation(event)) gridList.step(-4); }
+                    Keys.onRightPressed: event => { if (wallpaperWindow.pressNavigation(event)) gridList.step(1); }
+                    Keys.onLeftPressed: event => { if (wallpaperWindow.pressNavigation(event)) gridList.step(-1); }
+                    Keys.onReleased: event => wallpaperWindow.releaseNavigation(event)
+                    onActiveFocusChanged: if (!activeFocus) { wallpaperWindow.navigationKeys = ({}); repeatSettle.restart(); }
                     Keys.onReturnPressed: {
-                        if (wallpaperWindow.filteredWallpapers.length > 0) {
-                            var entry = wallpaperWindow.filteredWallpapers[gridList.currentIndex]
-                            if (entry) {
+                        if (wallpaperWindow.entries.length > 0) {
+                            var entry = wallpaperWindow.entries[gridList.tileIndex]
+                            if (entry && entry.kind === "category") {
+                                wallpaperWindow.openCategory(entry.name)
+                            } else if (entry) {
                                 wallpaperWindow.choose(entry)
                                 wallpaperWindow.visible = false
                             }
@@ -134,7 +322,7 @@ PanelWindow {
             }
         }
 
-        GridView {
+        ListView {
             id: gridList
             anchors {
                 top: headerBox.bottom
@@ -146,35 +334,68 @@ PanelWindow {
                 topMargin: 12
             }
             
-            cellWidth: Math.floor((width - 8) / 4)
-            cellHeight: Math.floor((cellWidth / 16) * 9) + 61
+            readonly property real cellWidth: Math.floor((width - 8) / 4)
+            readonly property real cellHeight: Math.floor((cellWidth / 16) * 9) + 61
             
-            model: ScriptModel {
-                values: wallpaperWindow.filteredWallpapers
-                objectProp: "path"
-                onValuesChanged: Qt.callLater(() => { gridList.currentIndex = values.length ? 0 : -1; })
+            readonly property var rows: {
+                var result = [], entries = wallpaperWindow.entries;
+                for (var i = 0; i < entries.length; i += 4)
+                    result.push({key: entries[i].key, items: entries.slice(i, i + 4)});
+                return result;
             }
-            add: Transition { NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
-            remove: Transition { NumberAnimation { properties: "opacity"; to: 0; duration: Theme.motionExit } }
+            property int tileIndex: wallpaperWindow.entries.length ? 0 : -1
+            property bool columnWrap: false
+            function select(index, wrap) {
+                if (index < 0 || index >= wallpaperWindow.entries.length) return;
+                columnWrap = wrap === true;
+                tileIndex = index;
+            }
+            function step(offset) {
+                var next = tileIndex + offset;
+                select(next, Math.abs(offset) === 1 && Math.floor(next / 4) !== Math.floor(tileIndex / 4));
+            }
+            function tileAt(x, y) {
+                var row = indexAt(x, y), column = Math.floor(x / cellWidth);
+                var index = row * 4 + column;
+                return row >= 0 && column >= 0 && column < 4 && index < wallpaperWindow.entries.length ? index : -1;
+            }
+            model: ScriptModel {
+                values: gridList.rows
+                objectProp: "key"
+                onValuesChanged: Qt.callLater(() => { gridList.tileIndex = wallpaperWindow.entries.length ? 0 : -1; })
+            }
+            add: Transition { enabled: !wallpaperWindow.loading; NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.motionNormal } }
             displaced: Transition { NumberAnimation { properties: "x,y"; duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-            currentIndex: 0
+            currentIndex: tileIndex < 0 ? -1 : Math.floor(tileIndex / 4)
+            reuseItems: true
+            cacheBuffer: cellHeight
             clip: true
-            highlightMoveDuration: Theme.launcherSelectionDuration
+            // One native ListView highlight also drives viewport scrolling,
+            // exactly as in AppLauncher; there is no independent visual tracker.
+            highlightMoveDuration: wallpaperWindow.repeatedNavigation ? 55 : Theme.launcherSelectionDuration
+            highlightMoveVelocity: -1
             highlight: Item {
-                width: gridList.cellWidth
+                width: gridList.width
                 height: gridList.cellHeight
                 Rectangle {
-                    anchors { fill: parent; margins: 6 }
+                    id: selectionBackground
+                    x: (Math.max(0, gridList.tileIndex) % 4) * gridList.cellWidth + 6
+                    y: 6
+                    width: gridList.cellWidth - 12
+                    height: gridList.cellHeight - 12
                     radius: 10
                     antialiasing: true
                     color: Theme.launcherSelectionBg
                     border.color: Theme.launcherSelectionBorder
                     border.width: 1
+                    // A row wrap starts at its destination column instead of
+                    // sweeping backwards over three unrelated thumbnails.
+                    Behavior on x { enabled: !gridList.columnWrap; SmoothedAnimation { duration: wallpaperWindow.repeatedNavigation ? 55 : Theme.launcherSelectionDuration; velocity: -1 } }
                     Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                     Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
                 }
             }
-            
+
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
                 visible: gridList.contentHeight > gridList.height
@@ -189,89 +410,160 @@ PanelWindow {
             }
 
             delegate: Item {
-                id: wallpaperTile
-                width: gridList.cellWidth
-                height: gridList.cellHeight
-                
-                required property var modelData
+                id: wallpaperRow
                 required property int index
-                readonly property bool highlighted: gridList.currentIndex === index || itemHover.hovered
+                required property var modelData
+                width: gridList.width
+                height: gridList.cellHeight
+                ListView.onReused: wallpaperRow.opacity = 1
+                Repeater {
+                    model: wallpaperRow.modelData.items
+                    delegate: Item {
+                        id: wallpaperTile
+                        width: gridList.cellWidth
+                        height: gridList.cellHeight
+                
+                        required property var modelData
+                        required property int index
+                        readonly property int entryIndex: wallpaperRow.index * 4 + index
+                        x: index * gridList.cellWidth
+                        readonly property bool isCategory: modelData.kind === "category"
+                        readonly property var asset: wallpaperWindow.assets[
+                            modelData.kind === "category" ? modelData.coverPath : modelData.path
+                        ] || ({})
+                        readonly property bool highlighted: gridList.tileIndex === entryIndex
 
-                Rectangle {
-                    anchors { fill: parent; margins: 6 }
-                    radius: 10
-                    color: itemHover.hovered && gridList.currentIndex !== index ? Theme.launcherHoverBg : "transparent"
-                    border.color: "transparent"
-                    border.width: 1
-                    Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
-                    
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: { gridList.currentIndex = wallpaperTile.index; wallpaperWindow.choose(wallpaperTile.modelData); }
-                    }
-                    ColumnLayout {
-                        anchors.fill: parent
-                        spacing: 0
-                        
                         Rectangle {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            Layout.margins: 6
-                            radius: 6
-                            color: "transparent"
-                            clip: true
-                            
-                            Image {
+                            anchors { fill: parent; margins: 6 }
+                            radius: 10
+                            color: !wallpaperWindow.keyboardSelection && itemHover.hovered && gridList.tileIndex !== wallpaperTile.entryIndex ? Theme.launcherHoverBg : "transparent"
+                            border.color: "transparent"
+                            border.width: 1
+                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                            Behavior on border.color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                    
+                            MouseArea {
                                 anchors.fill: parent
-                                source: "file://" + modelData.path
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: true
-                                sourceSize: Qt.size(240, 135)
-                            }
-                        }
-                        
-                        Row {
-                            Layout.alignment: Qt.AlignHCenter
-                            spacing: 4
-                            Repeater {
-                                model: wallpaperTile.modelData.swatches || []
-                                Rectangle {
-                                    required property var modelData
-                                    required property int index
-                                    width: index === 0 ? 22 : 14
-                                    height: 8
-                                    radius: 4
-                                    color: modelData
-                                    border.width: 1
-                                    border.color: Theme.glassBorder
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    gridList.select(wallpaperTile.entryIndex);
+                                    if (wallpaperTile.isCategory) wallpaperWindow.openCategory(modelData.name);
+                                    else wallpaperWindow.choose(modelData);
                                 }
                             }
-                        }
+                            ColumnLayout {
+                                anchors.fill: parent
+                                spacing: 0
+                        
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.margins: 6
+                                    radius: 6
+                                    color: Theme.hoverBg
+                                    clip: true
+                            
+                                    Image {
+                                        anchors.fill: parent
+                                        source: wallpaperTile.asset.thumbnail || ""
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        cache: true
+                                        sourceSize: Qt.size(384, 216)
+                                        opacity: status === Image.Ready ? 1 : 0
+                                        Behavior on opacity { NumberAnimation { duration: Theme.motionFast; easing.type: Easing.OutCubic } }
+                                    }
 
-                        Text {
-                            text: modelData.name
-                            color: wallpaperTile.highlighted ? Theme.accent : Theme.text
-                            Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
-                            font.family: Theme.fontMain
-                            font.pixelSize: 12
-                            Layout.fillWidth: true
-                            Layout.margins: 6
-                            Layout.topMargin: 0
-                            elide: Text.ElideRight
-                            horizontalAlignment: Text.AlignHCenter
+                                    Rectangle {
+                                        visible: wallpaperTile.isCategory
+                                        anchors { right: parent.right; bottom: parent.bottom; margins: 6 }
+                                        width: countLabel.implicitWidth + 12
+                                        height: 16
+                                        radius: 8
+                                        color: Theme.glassBg
+                                        border.width: 1
+                                        border.color: Theme.glassBorder
+                                        Text {
+                                            id: countLabel
+                                            anchors.centerIn: parent
+                                            text: modelData.count + (modelData.count === 1 ? " image" : " images")
+                                            color: Theme.text
+                                            font.family: Theme.fontMain
+                                            font.pixelSize: 9
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        visible: !wallpaperTile.isCategory && wallpaperWindow.searching
+                                        anchors { left: parent.left; bottom: parent.bottom; margins: 6 }
+                                        width: categoryPillLabel.implicitWidth + 12
+                                        height: 16
+                                        radius: 8
+                                        color: Theme.glassBg
+                                        border.width: 1
+                                        border.color: Theme.glassBorder
+                                        Text {
+                                            id: categoryPillLabel
+                                            anchors.centerIn: parent
+                                            text: wallpaperWindow.categoryLabel(modelData.category)
+                                            color: Theme.subtext0
+                                            font.family: Theme.fontMain
+                                            font.pixelSize: 9
+                                        }
+                                    }
+                                }
+
+                                Row {
+                                    visible: !wallpaperTile.isCategory
+                                    Layout.alignment: Qt.AlignHCenter
+                                    spacing: 4
+                                    Repeater {
+                                        model: wallpaperTile.asset.swatches || []
+                                        Rectangle {
+                                            required property var modelData
+                                            required property int index
+                                            width: index === 0 ? 22 : 14
+                                            height: 8
+                                            radius: 4
+                                            color: modelData
+                                            border.width: 1
+                                            border.color: Theme.glassBorder
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: wallpaperTile.isCategory
+                                        ? wallpaperWindow.categoryLabel(modelData.name)
+                                        : modelData.name
+                                    color: wallpaperTile.highlighted ? Theme.accent : Theme.text
+                                    Behavior on color { ColorAnimation { duration: Theme.launcherSelectionDuration; easing.type: Easing.OutCubic } }
+                                    font.family: Theme.fontMain
+                                    font.pixelSize: 12
+                                    Layout.fillWidth: true
+                                    Layout.margins: 6
+                                    Layout.topMargin: 0
+                                    elide: Text.ElideRight
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
+                            }
+
+                            HoverHandler {
+                                id: itemHover
+                                onHoveredChanged: if (hovered && !wallpaperWindow.keyboardSelection) gridList.select(wallpaperTile.entryIndex)
+                            }
+
                         }
                     }
-
-                    HoverHandler { id: itemHover }
-
                 }
             }
-            
+
             Text {
                 anchors.centerIn: parent
-                text: searchInput.text.length > 0 ? "No wallpapers match your search" : "No wallpapers found"
+                text: wallpaperWindow.loadingError || (wallpaperWindow.loading ? "Loading wallpapers…"
+                    : wallpaperWindow.searching ? "No wallpapers match your search"
+                    : wallpaperWindow.currentCategory === "" ? "No categories yet — add folders to ~/Pictures/Wallpapers"
+                    : "This category is empty")
                 color: Theme.subtext0
                 font.family: Theme.fontMain
                 font.pixelSize: 13
@@ -291,9 +583,8 @@ PanelWindow {
             wallpaperWindow.screen = scr;
         }
         searchInput.text = "";
-        if (wallpaperWindow.wallpapers.length === 0 && !findProc.running) {
-            findProc.running = true;
-        }
+        currentCategory = "";
+        refresh();
         wallpaperWindow.visible = true;
     }
 }

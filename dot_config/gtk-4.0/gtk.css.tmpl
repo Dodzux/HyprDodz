@@ -8617,3 +8617,9 @@ FIXME this is really an API */
 @define-color thumbnail_fg_color white;
 @define-color shade_color rgba(0, 0, 0, 0.36);
 @define-color scrollbar_outline_color rgba(0, 0, 0, 0.5);
+
+/* Pavucontrol: request background blur explicitly on GTK 4.24+. */
+window#pavucontrol-window,
+window.pavucontrol-window {
+  backdrop-filter: blur(20px);
+}

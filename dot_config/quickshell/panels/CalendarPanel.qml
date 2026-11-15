@@ -5,6 +5,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import qs
+import qs.services
 
 PanelWindow {
     id: calendarPopup
@@ -146,8 +147,8 @@ PanelWindow {
         scale: calendarPopup.visible ? 1 : 0.97
         Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
-        anchors.topMargin: 52
+        x: BarState.panelX(calendarPopup.width, width, "center")
+        y: BarState.panelY(calendarPopup.height, height, "center")
         width: 260
         height: 290
         color: Theme.glassBg

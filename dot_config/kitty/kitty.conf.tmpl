@@ -14,8 +14,8 @@ bold_font        auto
 italic_font      auto
 bold_italic_font auto
 
-font_size            12.5
-window_padding_width 8
+font_size 13
+window_padding_width 18 22
 
 # -----------------------------------------------------------------------------
 # Rendering Tweaks
@@ -23,7 +23,7 @@ window_padding_width 8
 
 text_composition_strategy platform
 disable_ligatures never
-adjust_line_height  100%
+adjust_line_height 108%
 adjust_column_width 100%
 box_drawing_scale 0.001, 1, 1.5, 2
 
@@ -31,22 +31,22 @@ box_drawing_scale 0.001, 1, 1.5, 2
 # Theme Colors (HyprBlur)
 # -----------------------------------------------------------------------------
 
-foreground              #e5e5e5
-background              #111111
-selection_foreground    #{{ template "accent_fg" . }}
-selection_background    #{{ template "accent" . }}
+foreground #e0e4ea
+background #111111
+selection_foreground #{{ template "accent_fg" . }}
+selection_background #{{ template "accent" . }}
 
 # Cursor colors (`cursor` is the wallpaper accent, rewritten by
 # ~/.config/hypr/scripts/sync_border.py; kitty auto-reloads)
-cursor                  #{{ template "accent" . }}
-cursor_text_color       #111111
+cursor #{{ template "accent" . }}
+cursor_text_color #111111
 
 # Scrollbar colors
 scrollbar_handle_color  #888888
 scrollbar_track_color   #1c1c1c
 
 # URL color when hovering
-url_color               #888888
+url_color #{{ template "accent" . }}
 
 # Kitty window border colors
 active_border_color     #e5e5e5
@@ -58,11 +58,11 @@ wayland_titlebar_color system
 macos_titlebar_color system
 
 # Tab bar colors (Platinum active, Onyx inactive)
-active_tab_foreground   #111111
-active_tab_background   #e5e5e5
-inactive_tab_foreground #888888
-inactive_tab_background #1c1c1c
-tab_bar_background      #0a0a0a
+active_tab_foreground #{{ template "accent" . }}
+active_tab_background #111111
+inactive_tab_foreground #697485
+inactive_tab_background #111111
+tab_bar_background #111111
 
 # Colors for marks
 mark1_foreground #111111
@@ -77,32 +77,32 @@ mark3_background #444444
 # -----------------------------------------------------------------------------
 
 # Black / Charcoal
-color0 #1c1c1c
-color8 #3d3d3d
+color0 #1b1e24
+color8 #606878
 
 # Red (Muted)
-color1 #d75f5f
-color9 #d75f5f
+color1 #df8290
+color9 #f09ba7
 
 # Green (Muted)
-color2  #87af87
-color10 #87af87
+color2 #9bc9ad
+color10 #b5ddc3
 
 # Yellow (Muted)
-color3  #dfaf87
-color11 #dfaf87
+color3 #dfbd94
+color11 #edd0ae
 
 # Blue: desktop accent for Codex UI highlights
-color4  #{{ template "accent" . }}
+color4 #{{ template "accent" . }}
 color12 #{{ template "accent" . }}
 
 # Magenta (Muted)
-color5  #af87af
-color13 #af87af
+color5 #b6a5d9
+color13 #cbbce8
 
 # Cyan (Muted)
-color6  #87afd7
-color14 #87afd7
+color6 #90caca
+color14 #b0dede
 
 # Desktop Accent: keywords, variables, functions, types, numbers, strings.
 {{- $accent := includeTemplate "accent" . -}}
@@ -116,8 +116,8 @@ color20 #{{ index $palette "20" }}
 color21 #{{ index $palette "21" }}
 
 # White (Platinum)
-color7  #e5e5e5
-color15 #ffffff
+color7 #d6dce5
+color15 #f1f3f6
 
 # Visual Cursor Trail (from old config)
 cursor_trail 1
@@ -136,3 +136,24 @@ map ctrl+backspace send_text all \x1b\x7f
 
 # Make ctrl+left move by path components (acts like Alt+Left)
 map ctrl+left send_text all \x1bb
+
+# Approved terminal style: spacing, cursor and quiet tabs.
+background_opacity 1
+cursor_shape beam
+cursor_beam_thickness 1.8
+cursor_blink_interval 0.55
+cursor_trail_decay 0.08 0.18
+cursor_trail_start_threshold 2
+shell_integration no-cursor
+enable_audio_bell no
+visual_bell_duration 0
+hide_window_decorations yes
+tab_bar_edge bottom
+tab_bar_style separator
+tab_separator "   "
+tab_bar_align left
+tab_bar_min_tabs 2
+tab_bar_margin_height 4 6
+tab_title_template " {index}  {title} "
+active_tab_font_style bold
+startup_session ~/.config/kitty/launch.kitty-session

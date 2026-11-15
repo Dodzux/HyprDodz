@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower as Up
 import qs
+import qs.services
 
 // Native PowerProfiles supplies live state; one short-lived command per click
 // reports permission/daemon failures without optimistically changing the icon.
@@ -14,6 +15,7 @@ BarItem {
     panelTargetWidth: batteryIcons.implicitWidth + 16 + ((detailsRequested || detailsShown) ? batteryText.implicitWidth + 4 : 0)
     width: contentRow.implicitWidth + 16
     selected: menu.visible
+    holdDetails: menu.visible
 
     readonly property var bat: Up.UPower.displayDevice
     readonly property bool hasBat: bat ? bat.ready && bat.isPresent : false
@@ -193,9 +195,9 @@ BarItem {
         visible: false
         grabFocus: true
         anchor.item: widget
-        anchor.rect.x: widget.width / 2
-        anchor.rect.y: widget.height + 12
-        anchor.gravity: Edges.Bottom
+        anchor.rect.x: BarState.popupX(widget.width)
+        anchor.rect.y: BarState.popupY(widget.height)
+        anchor.gravity: BarState.popupGravity
         color: "transparent"
         implicitWidth: 284
         implicitHeight: content.implicitHeight + 24

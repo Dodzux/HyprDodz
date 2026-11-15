@@ -67,10 +67,8 @@ PanelWindow {
         scale: centerPopup.visible ? 1 : 0.97
         Behavior on scale { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
         Behavior on height { NumberAnimation { duration: Theme.motionNormal; easing.type: Easing.OutCubic } }
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.topMargin: 48
-        anchors.rightMargin: 16
+        x: BarState.notificationX(centerPopup.screen, width)
+        y: BarState.notificationY(centerPopup.screen, height)
         width: 380
         height: Math.min(header.implicitHeight + (centerPopup.entries.length > 0 ? listView.contentHeight + 10 : 90) + 24, parent.height * 0.8)
         color: Theme.glassBg

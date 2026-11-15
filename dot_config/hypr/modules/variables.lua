@@ -15,7 +15,7 @@ vars.mainMod = "SUPER"                    -- Windows key as primary modifier
 local home = os.getenv("HOME") or ("/home/" .. (os.getenv("USER") or "user"))
 vars.terminal        = "kitty"
 vars.fileManager     = "kitty --class=org.yazi.fm -e fish -c 'y'"   -- yazi via kitty
-vars.browser         = "brave"
+vars.browser         = "brave-origin"
 vars.terminal_editor = "kitty -e nvim"   -- NvChad inside kitty
 vars.notingApp       = "obsidian"
 vars.discord         = "discord"
@@ -31,6 +31,7 @@ local function if_present(path, args)
     return args and (path .. " " .. args) or path
 end
 vars.codex           = if_present(home .. "/.local/bin/codex-terminal")
+vars.herdr           = if_present(home .. "/.local/bin/herdr-app")
 vars.thePlan         = if_present(home .. "/The-Plan/the-plan")
 -- NOTE: vars.bar removed — quickshell is a systemd unit now (../systemd/quickshell.service),
 --       not an exec_cmd. Its `env QT_QPA_PLATFORMTHEME=qt6ct` prefix was also already

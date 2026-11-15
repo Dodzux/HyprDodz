@@ -2,6 +2,8 @@
 
 > My Hyprland desktop on an ASUS ROG Strix G16: modular Lua configs, a custom Quickshell UI, and wallpaper colors shared across the desktop. Managed with chezmoi.
 
+**Version [0.2.1](https://github.com/Dodzux/HyprDodz/tree/v0.2.1)**
+
 ![HyprDodz desktop](assets/screenshots/preview.png)
 
 ---
@@ -26,7 +28,7 @@ chezmoi apply --interactive --exclude=scripts
 
 Initialization asks for the name shown on the lock screen and greeter, and detects the GPU vendor. A machine without a matching host profile uses automatic monitor settings.
 
-Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave** is installed separately (`brave-bin` on my machine); optional personal apps such as Codex also need their own installation.
+Review [packages/](packages/) and install the categories needed for your machine. Some entries use CachyOS packages or may need another package source on Arch. **Brave Origin** is installed separately (`brave-origin-bin` on my machine); optional personal apps such as Codex and Herdr also need their own installation.
 
 For full setup, review [scripts/bootstrap.sh](scripts/bootstrap.sh). It upgrades the system, installs packages and GPU drivers, configures Fish, SDDM and services, and force-applies the configs:
 
@@ -44,12 +46,14 @@ For manual setup, `~/.config/hypr/scripts/bootstrap.sh` configures desktop user 
 | --- | --- | --- |
 | Compositor | Hyprland | Modular Lua config, launched directly |
 | Greeter | SDDM | Custom `hypr-sddm` theme |
-| Bar & panels | Quickshell | QML bar, launcher, clipboard, notifications, overview and wallpaper selector |
+| Bar & panels | Quickshell | Bar on any screen edge, launcher, clipboard, notifications, overview and wallpaper selector |
+| Planning | Quickshell | Planner, tasks and workspace names saved locally |
+| Display & media | Hyprsunset + CAVA | Night light, extra dimming and media visualizer |
 | Terminal | Kitty | Default terminal; Ghostty settings are also included |
-| Shell | Fish + Starship | Modular shell files and a custom prompt |
+| Shell | Fish | Custom prompt, syntax colors and Zoxide navigation |
 | Editor | Neovim + NvChad | Lua configuration, plugins and language tooling |
 | File manager | Yazi | Opens inside Kitty |
-| Browser | Brave | Default browser on `SUPER + B` |
+| Browser | Brave Origin | Default browser on `SUPER + B` |
 | Wallpaper | awww | Animated wallpapers and random transitions |
 | Lock & idle | hyprlock + hypridle | Lock screen, idle blanking and display power management |
 | GTK & Qt | Graphite-Dark + Kvantum + qt6ct | Dark appearance with wallpaper accents |
@@ -68,6 +72,22 @@ Templates read `~/.local/state/hypr/accent`, preserving the selected color when 
 ```
 
 Accent-bearing configs are templates: `chezmoi re-add` skips them. Edit their source with `chezmoi edit` and retain the template expressions.
+
+### Optional: Strix Core
+
+[Strix Core](https://github.com/Dodzux/Strix-Core) adds GTK4 controls for monitoring, performance profiles, four-zone keyboard lighting and charging limits. Hardware controls are reviewed for the **ASUS ROG Strix G16 G614PH**. It is separate from the dotfiles and licensed **GPL-3.0-only**.
+
+Install the pinned **Strix Core v0.3.6** release when wanted:
+
+```bash
+sudo pacman -S --needed base-devel git
+bash ~/.local/share/chezmoi/scripts/install-strix-core.sh
+strix-core
+```
+
+For a full desktop setup including the app, run `bash ~/.local/share/chezmoi/scripts/bootstrap.sh --with-strix-core`. Without the flag, bootstrap skips it.
+
+The installer builds the verified source with `makepkg`; it does not start the app, enable autostart or change hardware. Enable M5/AURA bindings from Strix Core's **Hotkeys** page after installation. [Usage and supported controls](https://github.com/Dodzux/Strix-Core/blob/v0.3.6/USAGE.md).
 
 ---
 
@@ -134,13 +154,13 @@ The full bootstrap reads [packages/](packages/). App settings and package instal
 | `30-shell.txt` | Fish, Starship, Yazi, Git/GitHub CLI and command-line tools |
 | `40-terminals.txt` | Kitty and Ghostty |
 | `50-fonts.txt` | Noto, emoji, UI fonts and Cascadia Code Nerd Font |
-| `60-audio-media.txt` | PipeWire, WirePlumber, ALSA and media codecs |
+| `60-audio-media.txt` | PipeWire, WirePlumber, ALSA, CAVA, notification sounds and codecs |
 | `70-theming.txt` | GTK/Qt tooling, Kvantum, qt6ct and Tela icons |
 | `80-gpu-amd.txt` / `80-gpu-intel.txt` / `80-gpu-nvidia.txt` | Vendor-specific GPU packages |
 | `90-networking.txt` | NetworkManager, Bluetooth, OpenSSH and firewall tools |
 | `95-extra.txt` | Additional desktop utilities |
 
-Firefox remains in the application list; Brave is the configured browser. Theme assets are bundled in the repo, while bootstrap can fetch Graphite-Dark if it is missing.
+Firefox remains in the application list; Brave Origin is the configured browser. Theme assets are bundled in the repo, while bootstrap can fetch Graphite-Dark if it is missing.
 
 ---
 
@@ -152,16 +172,21 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | --- | --- |
 | `SUPER` + `T` | Open Kitty |
 | `SUPER` + `E` | Open Yazi in Kitty |
-| `SUPER` + `B` | Open Brave |
+| `SUPER` + `B` | Open Brave Origin |
 | `SUPER` + `C` | Open Neovim in Kitty |
 | `SUPER` + `X` | Open Codex in Kitty, if installed |
+| `SUPER` + `R` | Open Herdr, if installed |
 | `SUPER` + `O` | Open Obsidian |
 | `SUPER` + `U` | Run `sudo pacman -Syu` in Kitty to update the system |
 | `SUPER` + `A` | Show/hide the app launcher |
 | `SUPER` + `F` | Toggle keyboard focus on the bar |
 | `SUPER` + `Space` | Show/hide the wallpaper selector |
 | `SUPER` + `V` | Show/hide clipboard history |
+| `SUPER` + `,` | Show/hide notification history and its Do Not Disturb control |
+| `SUPER` + &#96; | Show/hide the window/workspace overview |
 | `SUPER` + `H` | Show/hide the interactive shortcut list |
+| `SUPER` + `Alt` + `↑` / `↓` / `←` / `→` | Place the bar at the top / bottom / left / right |
+| `SUPER` + `Ctrl` + `Alt` + `←` / `→` | Focus the previous / next monitor |
 | `SUPER` + `Backspace` | Show/hide the menu for lock, suspend, logout, restart and shutdown |
 | `SUPER` + `S` | Show/hide the `terminal` special workspace |
 | `SUPER` + `N` | Show/hide the `notes` special workspace |
@@ -176,6 +201,10 @@ Firefox remains in the application list; Brave is the configured browser. Theme 
 | `SUPER` + `Print` | Capture the focused monitor and push the README preview; close all windows first |
 
 Edit shortcuts in [modules/keybindings.lua](dot_config/hypr/modules/keybindings.lua) and app commands in [modules/variables.lua](dot_config/hypr/modules/variables.lua).
+
+Right-click the bar clock to open Tasks, then select **Open Planner** for the Quickshell planner.
+
+On the lock screen, use `Tab` / `Shift` + `Tab` or arrow keys to select a power button, `Enter` / `Space` to activate it, and `Esc` to return to the password field.
 
 ---
 
@@ -234,7 +263,7 @@ git push
 | `Pictures/Wallpapers/` | Wallpapers and GIFs |
 | `.chezmoitemplates/` | Shared accent and cursor templates |
 | `packages/` | Package manifests |
-| `scripts/` | Full bootstrap, showcase capture, audits and snapshot helpers |
+| `scripts/` | Full bootstrap, optional Strix Core installer, showcase capture and audits |
 | `system/` | Greeter and supplemental settings |
 | `docs/reports/` | Detailed restore and verification records |
 | `assets/screenshots/` | Desktop preview |

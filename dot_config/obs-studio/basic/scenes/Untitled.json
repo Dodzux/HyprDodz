@@ -1,7 +1,7 @@
 {
     "name": "Untitled",
     "DesktopAudioDevice1": {
-        "prev_ver": 537001986,
+        "prev_ver": 553648129,
         "name": "Desktop Audio",
         "uuid": "bf742b85-46f6-47be-a23d-39b931b75df4",
         "id": "pulse_output_capture",
@@ -23,16 +23,19 @@
         "hotkeys": {
             "libobs.mute": [],
             "libobs.unmute": [],
+            "libobs.monitor-on": [],
+            "libobs.monitor-off": [],
             "libobs.push-to-mute": [],
             "libobs.push-to-talk": []
         },
         "deinterlace_mode": 0,
         "deinterlace_field_order": 0,
         "monitoring_type": 0,
+        "monitoring_enabled": false,
         "private_settings": {}
     },
     "AuxAudioDevice1": {
-        "prev_ver": 537001986,
+        "prev_ver": 553648129,
         "name": "Mic/Aux",
         "uuid": "236268c8-9479-499b-b142-66770a388cec",
         "id": "pulse_input_capture",
@@ -54,17 +57,20 @@
         "hotkeys": {
             "libobs.mute": [],
             "libobs.unmute": [],
+            "libobs.monitor-on": [],
+            "libobs.monitor-off": [],
             "libobs.push-to-mute": [],
             "libobs.push-to-talk": []
         },
         "deinterlace_mode": 0,
         "deinterlace_field_order": 0,
         "monitoring_type": 0,
+        "monitoring_enabled": false,
         "private_settings": {}
     },
     "sources": [
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Screen Capture (PipeWire)",
             "uuid": "0106c18d-7246-4cdd-8105-e09c7e147f55",
             "id": "pipewire-screen-capture-source",
@@ -87,10 +93,11 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "private_settings": {}
         },
         {
-            "prev_ver": 537001986,
+            "prev_ver": 553648129,
             "name": "Scene",
             "uuid": "c6c752ac-3ccd-424b-b138-2d77c0025d04",
             "id": "scene",
@@ -175,6 +182,7 @@
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
+            "monitoring_enabled": false,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {}
         }
@@ -220,6 +228,9 @@
     "scaling_level": -7,
     "scaling_off_x": 0.0,
     "scaling_off_y": 0.0,
+    "virtual-camera": {
+        "type2": 3
+    },
     "modules": {
         "scripts-tool": [],
         "output-timer": {

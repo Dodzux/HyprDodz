@@ -8,6 +8,8 @@ hyprlock
 hyprpicker
 hyprpolkitagent
 hyprshutdown
+hyprsunset
+libnotify
 playerctl
 python-numpy
 python-pillow

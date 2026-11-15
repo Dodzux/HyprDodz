@@ -33,6 +33,8 @@ function cheatsheet.run(mask, key)
     if action then hl.dispatch(action) end
 end
 
+local lock_safe_binds = {}
+
 local function bind(keys, action, opts)
     local parts = {}
     for part in keys:gmatch("[^+]+") do
@@ -43,22 +45,29 @@ local function bind(keys, action, opts)
         mask = mask + (MOD_MASKS[parts[i]:upper()] or 0)
     end
     cheatsheet.actions[mask .. ":" .. parts[#parts]] = action
+    if opts and opts.locked then
+        lock_safe_binds[#lock_safe_binds + 1] = { keys = keys, action = action, opts = opts }
+    end
     return hl.bind(keys, action, opts)
 end
 
 -- ▓▒░ APPLICATION LAUNCHER BINDINGS
 bind(m .. " + T", hl.dsp.exec_cmd(vars.terminal), { description = "Apps: Terminal (kitty)" })
 bind(m .. " + E", hl.dsp.exec_cmd(vars.fileManager), { description = "Apps: File manager (yazi)" })
-bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Brave)" })
+bind(m .. " + B", hl.dsp.exec_cmd(vars.browser), { description = "Apps: Browser (Brave Origin)" })
 bind(m .. " + C", hl.dsp.exec_cmd(vars.terminal_editor), { description = "Apps: Editor (Neovim)" })     -- kitty -e nvim (NvChad)
 bind(m .. " + O", hl.dsp.exec_cmd(vars.notingApp), { description = "Apps: Notes (Obsidian)" })
 bind(m .. " + D", hl.dsp.exec_cmd(vars.discord), { description = "Apps: Discord" })
 bind(m .. " + U", hl.dsp.exec_cmd(vars.updater), { description = "System: Update system (pacman -Syu)" })              -- CachyOS system updater
-if vars.codex then
-    bind(m .. " + X", hl.dsp.exec_cmd(vars.codex), { description = "Apps: Codex" })
+if vars.opencode then
+    bind(m .. " + X", hl.dsp.exec_cmd(vars.opencode), { description = "Apps: OpenCode" })
 end
 if vars.thePlan then   -- nil unless installed (modules/variables.lua)
     bind(m .. " + Y", hl.dsp.exec_cmd(vars.thePlan), { description = "Apps: The Plan" })
+end
+
+if vars.herdr then
+    bind(m .. " + R", hl.dsp.exec_cmd(vars.herdr), { description = "Apps: Herdr" })
 end
 
 -- ▓▒░ QUICKSHELL PANEL TRIGGERS
@@ -71,6 +80,7 @@ bind(m .. " + F",         hl.dsp.global("quickshell:focus-bar"), { description =
 bind(m .. " + Backspace", hl.dsp.global("quickshell:toggle-power-menu"), { description = "Panels: Power menu" })
 bind("Print",             hl.dsp.global("quickshell:toggle-screenshot"), { description = "Capture: Screenshot panel (copy / save)" })
 bind(m .. " + H",         hl.dsp.global("quickshell:toggle-shortcuts"), { description = "Panels: Keybind cheatsheet" })
+bind(m .. " + ALT + N",   hl.dsp.global("quickshell:toggle-notebook"), { description = "Panels: Notebook (notes + plan)" })
 bind(m .. " + comma",     hl.dsp.global("quickshell:toggle-notifications"), { description = "Panels: Notifications + Do Not Disturb" })
 bind(m .. " + grave",     hl.dsp.global("quickshell:toggle-overview"), { description = "Panels: Window overview" })
 
@@ -90,7 +100,7 @@ bind(m .. " + SHIFT + down",  hl.dsp.window.resize({ x = 0, y = 30, relative = t
 
 -- ▓▒░ KEYBOARD LAYOUT SWITCHING
 -- Cycles through input.kb_layout (modules/input.lua, per-host override in hosts/)
-bind(m .. " + K", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"), { description = "System: Switch keyboard layout" })
+bind(m .. " + K", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"), { locked = true, description = "System: Switch keyboard layout" })
 
 -- ▓▒░ CLIPBOARD MANAGEMENT
 -- SUPER+V opens clipboard history via the quickshell ClipboardPanel
@@ -152,6 +162,17 @@ bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOU
 bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%+ && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness up" })
 bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -c backlight -n1 set 5%- && qs ipc call brightness showBrightness"),                  { locked = true, repeating = true, description = "Media: Brightness down" })
 
+-- Laptop-specific command is supplied by hosts/Potat0Mac.lua.
+if vars.performanceMode then
+    bind("XF86Launch4", hl.dsp.exec_cmd(vars.performanceMode), { description = "System: Cycle performance mode (fan key)" })
+end
+
+-- The ASUS driver also handles the physical key. The helper persists and
+-- reapplies our choice on release, keeping it consistent after a login restore.
+if vars.fnLock then
+    bind("XF86Fn_Esc", hl.dsp.exec_cmd(vars.fnLock .. " toggle"), { release = true, locked = true, description = "System: Toggle Fn key mode" })
+end
+
 -- ▓▒░ MEDIA CONTROL
 bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true, description = "Media: Next track" })
 bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true, description = "Media: Play / pause" })
@@ -159,7 +180,7 @@ bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true,
 bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true, description = "Media: Previous track" })
 
 -- ▓▒░ WALLPAPER TRANSITION (SUPER + SHIFT + W)
-bind(m .. " + SHIFT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/awww_transition.sh"), { description = "System: Random wallpaper" })
+bind(m .. " + SHIFT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/awww_transition.sh"), { repeating = true, description = "System: Random wallpaper" })
 
 -- ▓▒░ OPENRGB COLOR PICKER (SUPER + SHIFT + P)
 bind(m .. " + SHIFT + P", hl.dsp.exec_cmd("~/.config/hypr/scripts/pick_rgb.fish"), { description = "System: Pick an OpenRGB colour from the screen" })
@@ -182,9 +203,17 @@ bind(m .. " + CTRL + right", hl.dsp.window.move({ direction = "r" }), { descript
 bind(m .. " + CTRL + up",    hl.dsp.window.move({ direction = "u" }), { description = "Windows: Move window up" })
 bind(m .. " + CTRL + down",  hl.dsp.window.move({ direction = "d" }), { description = "Windows: Move window down" })
 
+
+-- Place the bar directly on the requested screen edge or hide.
+bind(m .. " + ALT + up", hl.dsp.global("quickshell:bar-top"), { description = "Panels: Bar at top" })
+bind(m .. " + ALT + down", hl.dsp.global("quickshell:bar-bottom"), { description = "Panels: Bar at bottom" })
+bind(m .. " + ALT + left", hl.dsp.global("quickshell:bar-left"), { description = "Panels: Bar at left" })
+bind(m .. " + ALT + right", hl.dsp.global("quickshell:bar-right"), { description = "Panels: Bar at right" })
+bind(m .. " + ALT + B", hl.dsp.global("quickshell:toggle-bar"), { description = "Panels: Toggle the bar" })
+
 -- ▓▒░ MULTI-MONITOR (matters once a laptop is docked)
-bind(m .. " + ALT + left",  hl.dsp.focus({ monitor = "-1" }), { description = "Workspaces: Focus previous monitor" })
-bind(m .. " + ALT + right", hl.dsp.focus({ monitor = "+1" }), { description = "Workspaces: Focus next monitor" })
+bind(m .. " + CTRL + ALT + left",  hl.dsp.focus({ monitor = "-1" }), { description = "Workspaces: Focus previous monitor" })
+bind(m .. " + CTRL + ALT + right", hl.dsp.focus({ monitor = "+1" }), { description = "Workspaces: Focus next monitor" })
 bind(m .. " + ALT + SHIFT + left",  hl.dsp.window.move({ monitor = "-1" }), { description = "Workspaces: Move window to previous monitor" })
 bind(m .. " + ALT + SHIFT + right", hl.dsp.window.move({ monitor = "+1" }), { description = "Workspaces: Move window to next monitor" })
 
@@ -204,3 +233,72 @@ bind(m .. " + I", hl.dsp.exec_cmd("hyprpicker -a"), { description = "Capture: Pi
 
 -- ▓▒░ RELOAD CONFIG
 bind(m .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "System: Reload Hyprland config" })
+
+-- BEGIN HYPRLOCK KEYBOARD NAVIGATION
+-- These maps are entered only by the active Hyprlock helper and reset on unlock.
+-- Only fixed UI commands are written; password text stays entirely in Hyprlock.
+local function lock_control(command, target)
+    local runtime = os.getenv("XDG_RUNTIME_DIR") or "/run/user/1000"
+    local queue = io.open(runtime .. "/hyprlock-buttons/commands", "a")
+    if not queue then
+        hl.dispatch(hl.dsp.submap("reset"))
+        return
+    end
+    queue:write(command .. "\n")
+    queue:close()
+    if target then hl.dispatch(hl.dsp.submap(target)) end
+end
+
+local function define_lock_navigation(name, buttons_focused)
+    hl.define_submap(name, function()
+        -- Retain all existing lock-safe controls, including Super+K and volume.
+        for _, entry in ipairs(lock_safe_binds) do
+            hl.bind(entry.keys, entry.action, entry.opts)
+        end
+        local navigation_keys = {
+            { "Tab", "tab-next" }, { "SHIFT + Tab", "tab-prev" },
+            { "right", "next" }, { "down", "next" },
+            { "left", "prev" }, { "up", "prev" },
+        }
+        for _, entry in ipairs(navigation_keys) do
+            local command = entry[2]
+            hl.bind(entry[1], function()
+                lock_control(command, "hyprlock-power")
+            end, { locked = true, description = "System: Lock screen power navigation" })
+        end
+        if buttons_focused then
+            for _, key in ipairs({ "Return", "KP_Enter", "space" }) do
+                hl.bind(key, function()
+                    lock_control("activate", "hyprlock-input")
+                end, { locked = true, description = "System: Activate selected lock screen power button" })
+            end
+            hl.bind("Escape", function()
+                lock_control("clear", "hyprlock-input")
+            end, { locked = true, description = "System: Return to lock screen password" })
+
+            -- Pass ordinary key presses through unchanged while immediately
+            -- restoring password focus. Physical codes cover US/Arabic/IME keys
+            -- without inspecting or recording the characters being typed.
+            -- Keep modifiers and navigation/activation keys in the button map.
+            local retained_codes = {
+                [9] = true, [23] = true, [36] = true, [65] = true, [104] = true,
+                [111] = true, [113] = true, [114] = true, [116] = true,
+                [37] = true, [50] = true, [62] = true, [64] = true, [66] = true,
+                [77] = true, [78] = true, [92] = true, [105] = true,
+                [108] = true, [133] = true, [134] = true,
+            }
+            for code = 8, 255 do
+                if not retained_codes[code] then
+                    hl.bind("code:" .. code, function()
+                        lock_control("clear", "hyprlock-input")
+                    end, { locked = true, ignore_mods = true, non_consuming = true,
+                           description = "System: Resume lock screen password entry" })
+                end
+            end
+        end
+    end)
+end
+
+define_lock_navigation("hyprlock-input", false)
+define_lock_navigation("hyprlock-power", true)
+-- END HYPRLOCK KEYBOARD NAVIGATION

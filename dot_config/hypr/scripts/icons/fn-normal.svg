@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<rect x="6" y="8" width="49" height="46" rx="10" fill="#24242b" stroke="#e8e8ef" stroke-width="2.5"/>
+<text x="13" y="29" fill="#f0f0f5" font-family="sans-serif" font-size="20" font-weight="600">Fn</text>
+<rect x="33" y="30" width="29" height="32" rx="9" fill="#24242b"/>
+<g fill="none" stroke="#8fcbd6" stroke-width="3" stroke-linecap="round"><path d="M42 40v-5a6 6 0 0 1 11-3"/><rect x="38" y="40" width="20" height="17" rx="4"/></g>
+<circle cx="48" cy="47" r="2" fill="#8fcbd6"/><path d="M48 48v4" stroke="#8fcbd6" stroke-width="2" stroke-linecap="round"/>
+</svg>

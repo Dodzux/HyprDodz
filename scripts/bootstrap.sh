@@ -8,6 +8,19 @@
 
 set -euo pipefail
 
+INSTALL_STRIX_CORE=false
+usage() {
+    echo "Usage: $(basename "$0") [--with-strix-core] [--help]"
+    echo 'Full desktop setup. Strix Core is installed only with --with-strix-core.'
+}
+for option in "$@"; do
+    case "$option" in
+        --with-strix-core) INSTALL_STRIX_CORE=true ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+done
+
 BOLD='\033[1m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -89,6 +102,16 @@ else
 fi
 log_success "All package categories installed successfully."
 
+if [ "$INSTALL_STRIX_CORE" = true ]; then
+    log_info "Installing optional Strix Core..."
+    if sudo pacman -S --needed --noconfirm base-devel git \
+        && bash "$REPO_DIR/scripts/install-strix-core.sh"; then
+        log_success "Strix Core installed."
+    else
+        log_warn "Strix Core install failed; retry scripts/install-strix-core.sh after setup."
+    fi
+fi
+
 # 5. Themes that aren't in the Arch repos, fetched from upstream. Skipped when
 #    already present, so re-runs don't touch a theme you've customised.
 if [ -d "$HOME/.themes/Graphite-Dark" ]; then
@@ -130,8 +153,6 @@ if [ -d "$SDDM_SYSTEM_DIR" ]; then
     log_info "Installing SDDM config and hypr-sddm greeter theme..."
     sudo install -Dm644 "$REPO_DIR/system/etc/sddm.conf" /etc/sddm.conf
     sudo cp -rT "$SDDM_SYSTEM_DIR" /usr/share/sddm/themes/hypr-sddm
-    sudo install -Dm644 "$REPO_DIR/Pictures/Wallpapers/street.gif"   /usr/share/sddm/themes/hypr-sddm/Backgrounds/street.gif
-    sudo install -Dm644 "$REPO_DIR/Pictures/Wallpapers/black_bg.jpg" /usr/share/sddm/themes/hypr-sddm/Backgrounds/black_bg.jpg
     # SDDM layers theme.conf.user over the theme's theme.conf: the per-machine
     # greeter header lives there, so the tracked theme stays generic.
     printf '[General]\nHeaderText="%s"\n' "${DISPLAY_NAME//\"/}" \

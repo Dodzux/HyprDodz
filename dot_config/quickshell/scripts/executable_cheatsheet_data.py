@@ -160,7 +160,7 @@ def flags_text(b):
 PANEL_KEYS = [
     ("App launcher", [("Move selection", ["↑↓"]), ("Launch app", ["Enter"])]),
     ("Clipboard history", [("Move selection", ["↑↓"]), ("Copy entry to the clipboard", ["Enter"])]),
-    ("Wallpaper selector", [("Move selection", ["←→↑↓"]), ("Set wallpaper", ["Enter"])]),
+    ("Wallpaper selector", [("Move selection", ["←→↑↓"]), ("Open category / set wallpaper", ["Enter"]), ("Search every folder", ["type"]), ("Clear search / back", ["Esc"])]),
     ("Window overview", [("Select window", ["←→↑↓"]), ("Select next / previous", ["Tab / Shift+Tab"]),
                          ("Focus selected window", ["Enter"]), ("Jump to workspace", ["1–0"])]),
     ("Power menu", [("Move selection", ["←→↑↓"]), ("Confirm", ["Enter"])]),
@@ -171,6 +171,8 @@ PANEL_KEYS = [
     ("Network panel", [("Move between rows", ["Tab / ↑↓"]), ("Toggle / connect / expand", ["Enter / Space"]),
                        ("Connect with typed password", ["Enter"])]),
     ("Notifications", [("Toggle Do Not Disturb", ["Right-click bell"]), ("Open from the clock", ["Right-click clock"])]),
+    ("Notebook", [("New page / search / plan view", ["Ctrl+N / Ctrl+F / Ctrl+P"]),
+                  ("Clear search, then close", ["Esc"])]),
     ("This cheatsheet", [("Search", ["type"]), ("Move selection", ["↑↓"]), ("Next / previous category", ["Tab / Shift+Tab"]),
                          ("Run bind, or copy keys", ["Enter"]), ("Clear search, then close", ["Esc"])]),
     ("Every panel", [("Close", ["Esc"])]),

@@ -69,3 +69,6 @@ ToolButtonStyle=IconOnly
 
 [ViewPropertiesDialog]
 1920x1080 screen: Window-Maximized=true
+
+[KDE]
+AnimationDurationFactor=1.15

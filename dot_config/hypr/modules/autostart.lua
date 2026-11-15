@@ -98,3 +98,11 @@ end)
 --       `systemctl --user start` calls here are what Systemd tells you to remove.
 -- NOTE: nm-applet, dunst, hyprpaper and waybar are all intentionally absent —
 --       quickshell and awww cover those roles.
+
+-- Restore this host's last Fn choice once at login; no resident helper.
+local fnLock = require("modules.variables").fnLock
+if fnLock then
+    hl.on("hyprland.start", function()
+        hl.exec_cmd(fnLock .. " restore")
+    end)
+end

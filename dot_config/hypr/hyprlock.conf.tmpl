@@ -22,15 +22,25 @@ $font = CaskaydiaCove Nerd Font Italic
 # NOTE: no_fade_in, grace, and disable_loading_bar were removed upstream.
 #       Grace period is now passed as the --grace CLI flag (see hypridle.conf).
 general {
-    hide_cursor = true
+    hide_cursor = false
 }
 
-# ▓▒░ BACKGROUND — transparent background with Hyprland session blur
+# ▓▒░ BACKGROUND — lightly dim the existing session blur
 background {
     monitor     =
-    color       = rgba(0,0,0,0)
+    color       = rgba(0,0,0,0.20)
     blur_passes = 0
 }
+
+# BEGIN LOCK TRANSITION
+# Speeds are in 100ms units: 400ms in, 250ms out.
+animations {
+    enabled = true
+    bezier = lockSmooth, 0.4, 0.0, 0.2, 1.0
+    animation = fadeIn, 1, 4, lockSmooth
+    animation = fadeOut, 1, 2.5, lockSmooth
+}
+# END LOCK TRANSITION
 
 # ▓▒░ CLOCK — large time display at top
 label {
@@ -92,3 +102,49 @@ input-field {
     halign           = center
     valign           = center
 }
+
+# BEGIN BOTTOM POWER BUTTONS
+# Reference-style white icons; dim the icon slightly on hover.
+
+image {
+    monitor =
+    path = /run/user/{{ .chezmoi.uid }}/hyprlock-buttons/suspend.png
+    size = 80
+    rounding = 0
+    border_size = 0
+    position = -128, 16
+    halign = center
+    valign = bottom
+    zindex = 2
+    reload_time = 0
+    onclick = systemctl suspend
+}
+
+image {
+    monitor =
+    path = /run/user/{{ .chezmoi.uid }}/hyprlock-buttons/restart.png
+    size = 80
+    rounding = 0
+    border_size = 0
+    position = 0, 16
+    halign = center
+    valign = bottom
+    zindex = 2
+    reload_time = 0
+    onclick = systemctl reboot
+}
+
+image {
+    monitor =
+    path = /run/user/{{ .chezmoi.uid }}/hyprlock-buttons/shutdown.png
+    size = 80
+    rounding = 0
+    border_size = 0
+    position = 128, 16
+    halign = center
+    valign = bottom
+    zindex = 2
+    reload_time = 0
+    onclick = systemctl poweroff
+}
+# END BOTTOM POWER BUTTONS

@@ -11,6 +11,26 @@ import subprocess
 import tempfile
 
 HOME = Path.home()
+WALLPAPER_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+
+def wallpaper_paths(directory=None):
+    """Every wallpaper under the root, with its category folder.
+
+    Categories are the root's subdirectories; loose files belong to "". Hidden
+    folders are skipped so cache and backup directories never become categories.
+    """
+    root = directory or HOME / "Pictures/Wallpapers"
+    result = []
+    for path in root.rglob("*"):
+        relative = path.relative_to(root)
+        if any(part.startswith(".") for part in relative.parts):
+            continue
+        if not path.is_file() or path.suffix.lower() not in WALLPAPER_SUFFIXES:
+            continue
+        category = relative.parent.as_posix()
+        result.append((path, "" if category == "." else category))
+    return result
 
 
 def hypr_json(kind):
@@ -19,7 +39,7 @@ def hypr_json(kind):
 
 
 def shortcuts():
-    aliases = {"brave": "brave-browser", "neovim": "nvim"}
+    aliases = {"brave": "brave-browser", "neovim": "nvim", "herdr": "herdr-app"}
     result = {}
     for bind in hypr_json("binds"):
         description = bind.get("description", "")
@@ -33,25 +53,42 @@ def shortcuts():
     return result
 
 
+def monitor_work_area(monitor):
+    """Logical desktop rectangle, excluding layer-shell reserved margins."""
+    scale = monitor.get("scale", 1) or 1
+    width, height = monitor["width"] / scale, monitor["height"] / scale
+    if monitor.get("transform", 0) % 2:
+        width, height = height, width
+    reserved = list(monitor.get("reserved") or [])
+    reserved = (reserved + [0, 0, 0, 0])[:4]
+    left, top, right, bottom = (max(0, float(v)) for v in reserved)
+    return {"x": monitor.get("x", 0) + left, "y": monitor.get("y", 0) + top,
+            "width": max(1, width - left - right), "height": max(1, height - top - bottom)}
+
+
 def workspaces():
     monitors = {m["id"]: m for m in hypr_json("monitors")}
     result = []
     for client in hypr_json("clients"):
-        if not client.get("mapped") or client.get("hidden") or client["workspace"]["id"] < 1:
+        workspace = client.get("workspace") or {}
+        try:
+            number = int(workspace.get("id", workspace.get("name", "0")))
+        except (TypeError, ValueError):
+            continue
+        if not client.get("mapped") or client.get("hidden") or number < 1:
             continue
         monitor = monitors.get(client["monitor"])
         if not monitor:
             continue
-        width, height = monitor["width"] / monitor["scale"], monitor["height"] / monitor["scale"]
-        if monitor.get("transform", 0) % 2:
-            width, height = height, width
+        area = monitor_work_area(monitor)
+        width, height = area["width"], area["height"]
         # App identity and rectangles suffice: no screenshots or document titles.
         result.append({"address": client["address"], "pid": client["pid"], "class": client["class"], "aspect": width / height,
                        "workspace": str(client["workspace"]["name"]),
-                       "x": max(0, min(1, (client["at"][0] - monitor["x"]) / width)),
-                       "y": max(0, min(1, (client["at"][1] - monitor["y"]) / height)),
-                       "w": max(0, min(1, (client["at"][0] + client["size"][0] - monitor["x"]) / width) - max(0, (client["at"][0] - monitor["x"]) / width)),
-                       "h": max(0, min(1, (client["at"][1] + client["size"][1] - monitor["y"]) / height) - max(0, (client["at"][1] - monitor["y"]) / height))})
+                       "x": max(0, min(1, (client["at"][0] - area["x"]) / width)),
+                       "y": max(0, min(1, (client["at"][1] - area["y"]) / height)),
+                       "w": max(0, min(1, (client["at"][0] + client["size"][0] - area["x"]) / width) - max(0, (client["at"][0] - area["x"]) / width)),
+                       "h": max(0, min(1, (client["at"][1] + client["size"][1] - area["y"]) / height) - max(0, (client["at"][1] - area["y"]) / height))})
     return result
 
 
@@ -68,7 +105,8 @@ def focus_preview_window(request):
 
 
 def overview_snapshot():
-    return {"monitors": hypr_json("monitors"), "workspaces": hypr_json("workspaces"),
+    monitors = [dict(m, workArea=monitor_work_area(m)) for m in hypr_json("monitors")]
+    return {"monitors": monitors, "workspaces": hypr_json("workspaces"),
             "clients": [c for c in hypr_json("clients")
                         if c.get("mapped") and not c.get("hidden") and c.get("workspace", {}).get("id", 0) > 0]}
 
@@ -157,9 +195,7 @@ def palettes(cache):
     spec.loader.exec_module(reader)
     cache.mkdir(parents=True, exist_ok=True)
     result = []
-    for path in sorted((HOME / "Pictures/Wallpapers").iterdir(), key=lambda p: p.name.lower()):
-        if not path.is_file() or path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-            continue
+    for path, category in sorted(wallpaper_paths(), key=lambda entry: (entry[1].casefold(), entry[0].name.casefold())):
         try:
             identity = f"{path.resolve()}:{path.stat().st_mtime_ns}:{path.stat().st_size}:{extractor.stat().st_mtime_ns}:v1"
             key = hashlib.sha256(identity.encode()).hexdigest()
@@ -192,12 +228,125 @@ def palettes(cache):
     return result
 
 
+def wallpaper_assets(cache, directory=None):
+    """Publish the cheap inventory first, then fill immutable preview assets."""
+    directory = directory or HOME / "Pictures/Wallpapers"
+    extractor = HOME / ".config/hypr/scripts/sync_border.py"
+    cache.mkdir(parents=True, exist_ok=True)
+    paths = sorted(wallpaper_paths(directory),
+                   key=lambda entry: (entry[1].casefold(),
+                                      re.sub(r"^\d+[\s._-]+", "", entry[0].name.casefold()),
+                                      entry[0].name.casefold(), str(entry[0])))
+    inventory, missing = [], []
+    for path, category in paths:
+        stat = path.stat()
+        source_id = f"{path.resolve()}:{stat.st_mtime_ns}:{stat.st_size}"
+        identity = f"{source_id}:{extractor.stat().st_mtime_ns}:v1"
+        palette_file = cache / (hashlib.sha256(identity.encode()).hexdigest() + ".json")
+        preview_version = ":384x216-gif-rgb-v2" if path.suffix.lower() == ".gif" else ":384x216-v1"
+        thumbnail = cache / ("thumb-" + hashlib.sha256((source_id + preview_version).encode()).hexdigest() + ".jpg")
+        palette = None
+        try:
+            saved = json.loads(palette_file.read_text())
+            if isinstance(saved, dict) and saved.get("identity") == identity and all(k in saved for k in ("accent", "swatches")):
+                palette = saved
+        except (OSError, ValueError, TypeError):
+            pass
+        item = {"path": str(path), "name": path.name, "category": category,
+                "accent": palette["accent"] if palette else "#e5e5e5",
+                "swatches": palette["swatches"] if palette else [],
+                "thumbnail": thumbnail.as_uri() if thumbnail.is_file() else ""}
+        inventory.append(item)
+        if not item["thumbnail"] or palette is None:
+            missing.append((path, item, thumbnail, palette_file, identity, palette))
+    yield {"type": "list", "items": inventory}
+
+    def build(job):
+        path, item, thumbnail, palette_file, identity, palette = job
+        result = dict(item)
+        try:
+            from PIL import Image, ImageOps, ImageStat
+            if not thumbnail.is_file():
+                with Image.open(path) as original:
+                    original.seek(0)  # Animated wallpaper previews stay static.
+                    # Palette images otherwise force nearest-neighbour resizing.
+                    image = ImageOps.exif_transpose(original).convert("RGB")
+                    image.thumbnail((384, 216), Image.Resampling.BILINEAR, reducing_gap=3.0)
+                    if original.format == "GIF":
+                        brightness = sum(ImageStat.Stat(image).mean) / 3
+                        if brightness < 1.5:
+                            for frame in (1, 4, 8, 12, 16, 24):
+                                try:
+                                    original.seek(frame)
+                                except EOFError:
+                                    break
+                                candidate = original.convert("RGB")
+                                candidate.thumbnail((384, 216), Image.Resampling.BILINEAR, reducing_gap=3.0)
+                                candidate_brightness = sum(ImageStat.Stat(candidate).mean) / 3
+                                if candidate_brightness > brightness:
+                                    image, brightness = candidate, candidate_brightness
+                                if brightness >= 3:
+                                    break
+                    temporary = None
+                    try:
+                        with tempfile.NamedTemporaryFile(dir=cache, suffix=".jpg", delete=False) as stream:
+                            temporary = Path(stream.name)
+                            image.save(stream, format="JPEG", quality=84)
+                        os.replace(temporary, thumbnail)
+                    finally:
+                        if temporary is not None:
+                            temporary.unlink(missing_ok=True)
+            result["thumbnail"] = thumbnail.as_uri()
+            if palette is None:
+                spec = importlib.util.spec_from_file_location("desktop_color_reader", extractor)
+                reader = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(reader)
+                accent, _ = reader.extract_color(str(path))
+                with Image.open(path) as original:
+                    original.seek(0)
+                    image = original.convert("RGB")
+                    image.thumbnail((96, 96))
+                    quantized = image.quantize(colors=6)
+                    colors = quantized.getpalette()
+                    swatches = ["#" + "".join(f"{v:02x}" for v in colors[index * 3:index * 3 + 3])
+                                for _, index in sorted(quantized.getcolors(), reverse=True)]
+                result.update(accent="#" + accent, swatches=["#" + accent] + [c for c in swatches if c != "#" + accent][:4])
+                saved = dict(result, identity=identity)
+                temporary = None
+                try:
+                    with tempfile.NamedTemporaryFile(mode="w", dir=cache, delete=False) as stream:
+                        json.dump(saved, stream)
+                        temporary = Path(stream.name)
+                    os.replace(temporary, palette_file)
+                finally:
+                    if temporary is not None:
+                        temporary.unlink(missing_ok=True)
+        except (OSError, ValueError, KeyError) as error:
+            result["error"] = str(error)
+        return result
+
+    # Bound peak decode memory and CPU, and let Qt show each preview as it arrives.
+    if missing:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            for future in as_completed([pool.submit(build, job) for job in missing]):
+                yield {"type": "asset", "item": future.result()}
+    yield {"type": "done"}
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "overview", "overview-action", "focus-window"])
+    parser.add_argument("mode", choices=["shortcuts", "workspaces", "palettes", "wallpapers", "overview", "overview-action", "focus-window"])
     parser.add_argument("--cache", type=Path, default=HOME / ".cache/quickshell/wallpaper-palettes")
     parser.add_argument("--request", help="Validated overview action as JSON")
     args = parser.parse_args()
+    if args.mode == "wallpapers":
+        try:
+            for update in wallpaper_assets(args.cache):
+                print(json.dumps(update), flush=True)
+        except (ValueError, OSError) as error:
+            print(json.dumps({"type": "error", "message": str(error)}), flush=True)
+        return
     try:
         if args.mode in ("overview-action", "focus-window"):
             request = json.loads(args.request or "{}")
