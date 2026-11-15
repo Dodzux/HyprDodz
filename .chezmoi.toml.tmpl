@@ -29,6 +29,6 @@
     displayName = {{ $displayName | quote }}
 
 {{- /* The account's login shell is bash, so `chezmoi cd` would otherwise spawn
-       bash even when the interactive shell is fish. Pin it to fish. */ -}}
+       bash even when the interactive shell is fish. Pin it to fish. */}}
 [cd]
     command = "fish"
