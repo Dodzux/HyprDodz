@@ -2,7 +2,7 @@
 
 > My Hyprland desktop on an ASUS ROG Strix G16: modular Lua configs, a custom Quickshell UI, and wallpaper colors shared across the desktop. Managed with chezmoi.
 
-**Version [0.2.0](https://github.com/Dodzux/HyprDodz/tree/v0.2.0)**
+**Version [0.2.1](https://github.com/Dodzux/HyprDodz/tree/v0.2.1)**
 
 ![HyprDodz desktop](assets/screenshots/preview.png)
 
