@@ -11,6 +11,26 @@ import subprocess
 import tempfile
 
 HOME = Path.home()
+WALLPAPER_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+
+def wallpaper_paths(directory=None):
+    """Every wallpaper under the root, with its category folder.
+
+    Categories are the root's subdirectories; loose files belong to "". Hidden
+    folders are skipped so cache and backup directories never become categories.
+    """
+    root = directory or HOME / "Pictures/Wallpapers"
+    result = []
+    for path in root.rglob("*"):
+        relative = path.relative_to(root)
+        if any(part.startswith(".") for part in relative.parts):
+            continue
+        if not path.is_file() or path.suffix.lower() not in WALLPAPER_SUFFIXES:
+            continue
+        category = relative.parent.as_posix()
+        result.append((path, "" if category == "." else category))
+    return result
 
 
 def hypr_json(kind):
@@ -175,9 +195,7 @@ def palettes(cache):
     spec.loader.exec_module(reader)
     cache.mkdir(parents=True, exist_ok=True)
     result = []
-    for path in sorted((HOME / "Pictures/Wallpapers").iterdir(), key=lambda p: p.name.lower()):
-        if not path.is_file() or path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
-            continue
+    for path, category in sorted(wallpaper_paths(), key=lambda entry: (entry[1].casefold(), entry[0].name.casefold())):
         try:
             identity = f"{path.resolve()}:{path.stat().st_mtime_ns}:{path.stat().st_size}:{extractor.stat().st_mtime_ns}:v1"
             key = hashlib.sha256(identity.encode()).hexdigest()
@@ -215,11 +233,12 @@ def wallpaper_assets(cache, directory=None):
     directory = directory or HOME / "Pictures/Wallpapers"
     extractor = HOME / ".config/hypr/scripts/sync_border.py"
     cache.mkdir(parents=True, exist_ok=True)
-    paths = [p for p in directory.iterdir() if p.is_file()
-             and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp", ".gif"}]
-    paths.sort(key=lambda p: (re.sub(r"^\d+[\s._-]+", "", p.name.casefold()), p.name.casefold(), str(p)))
+    paths = sorted(wallpaper_paths(directory),
+                   key=lambda entry: (entry[1].casefold(),
+                                      re.sub(r"^\d+[\s._-]+", "", entry[0].name.casefold()),
+                                      entry[0].name.casefold(), str(entry[0])))
     inventory, missing = [], []
-    for path in paths:
+    for path, category in paths:
         stat = path.stat()
         source_id = f"{path.resolve()}:{stat.st_mtime_ns}:{stat.st_size}"
         identity = f"{source_id}:{extractor.stat().st_mtime_ns}:v1"
@@ -233,7 +252,7 @@ def wallpaper_assets(cache, directory=None):
                 palette = saved
         except (OSError, ValueError, TypeError):
             pass
-        item = {"path": str(path), "name": path.name,
+        item = {"path": str(path), "name": path.name, "category": category,
                 "accent": palette["accent"] if palette else "#e5e5e5",
                 "swatches": palette["swatches"] if palette else [],
                 "thumbnail": thumbnail.as_uri() if thumbnail.is_file() else ""}

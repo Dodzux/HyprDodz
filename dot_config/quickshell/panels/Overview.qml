@@ -100,6 +100,7 @@ PanelWindow {
     }
     function iconFor(c) {
         if(c.class === "org.quickshell" && c.title === "Planner")return "file://" + Quickshell.shellDir + "/assets/planner.svg";
+        if(c.class === "org.quickshell" && c.title === "Notebook")return "file://" + Quickshell.shellDir + "/assets/notebook.svg";
         var entry = DesktopEntries.heuristicLookup(c.class === "org.yazi.fm" ? "yazi" : c.class || "");
         return entry && entry.icon ? (entry.icon.startsWith("/") ? entry.icon : "image://icon/" + entry.icon) : "image://icon/application-x-executable";
     }

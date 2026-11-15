@@ -54,7 +54,10 @@ ShellRoot {
         implicitHeight: content.implicitHeight + 40
         color: "transparent"
         exclusiveZone: -1
-        anchors { top: true; left: true }
+        anchors {
+            top: true
+            left: true
+        }
         margins.top: BarState.notificationY(screen, implicitHeight)
         margins.left: BarState.notificationX(screen, implicitWidth)
         WlrLayershell.namespace: "quickshell-reload-toast"
@@ -316,7 +319,18 @@ ShellRoot {
     }
     function openPlanner() {
         tasksPanel.visible = false;
+        notebookWindow.visible = false;
         plannerWindow.open(getFocusedScreen());
+    }
+    function toggleNotebook() {
+        if (notebookWindow.visible) {
+            notebookWindow.visible = false;
+            return;
+        }
+        tasksPanel.visible = false;
+        calendarPanel.visible = false;
+        plannerWindow.visible = false;
+        notebookWindow.open(getFocusedScreen());
     }
     function renameWorkspace(id) {
         workspaceRename.open(getFocusedScreen(), id);
@@ -343,7 +357,8 @@ ShellRoot {
     }
 
     function placeBar(edge) {
-        if (BarState.edges.indexOf(edge) < 0) return;
+        if (BarState.edges.indexOf(edge) < 0)
+            return;
         dismissBarPopups();
         for (var panel of [calendarPanel, tasksPanel, notificationCenter, networkPanel, trayMenu, powerMenuPanel])
             panel.visible = false;
@@ -351,13 +366,70 @@ ShellRoot {
     }
     IpcHandler {
         target: "bar"
-        function setEdge(edge: string): void { root.placeBar(edge); }
-        function status(): string { return JSON.stringify({edge: BarState.edge, moving: BarState.moving, ready: BarState.ready, bell: BarState.notificationPoint(root.getFocusedScreen())}); }
+        function setEdge(edge: string): void {
+            root.placeBar(edge);
+        }
+        function toggle(): void {
+            root.dismissBarPopups();
+            BarState.toggleVisible();
+        }
+        function status(): string {
+            return JSON.stringify({
+                edge: BarState.edge,
+                moving: BarState.moving,
+                ready: BarState.ready,
+                bell: BarState.notificationPoint(root.getFocusedScreen())
+            });
+        }
     }
-    GlobalShortcut { appid: "quickshell"; name: "bar-top"; description: "Place bar at top"; onPressed: root.placeBar("top") }
-    GlobalShortcut { appid: "quickshell"; name: "bar-bottom"; description: "Place bar at bottom"; onPressed: root.placeBar("bottom") }
-    GlobalShortcut { appid: "quickshell"; name: "bar-left"; description: "Place bar at left"; onPressed: root.placeBar("left") }
-    GlobalShortcut { appid: "quickshell"; name: "bar-right"; description: "Place bar at right"; onPressed: root.placeBar("right") }
+    IpcHandler {
+        target: "notebook"
+        function toggle(): void {
+            root.toggleNotebook();
+        }
+        function status(): string {
+            return JSON.stringify({
+                open: notebookWindow.visible,
+                ready: NotebookState.ready,
+                pages: NotebookState.pages.length
+            });
+        }
+    }
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "bar-top"
+        description: "Place bar at top"
+        onPressed: root.placeBar("top")
+    }
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "bar-bottom"
+        description: "Place bar at bottom"
+        onPressed: root.placeBar("bottom")
+    }
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "bar-left"
+        description: "Place bar at left"
+        onPressed: root.placeBar("left")
+    }
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "bar-right"
+        description: "Place bar at right"
+        onPressed: root.placeBar("right")
+    }
+
+    // ▓▒░ BAR VISIBILITY — SUPER+ALT+B
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "toggle-bar"
+        description: "Toggle the bar"
+        onPressed: {
+            root.dismissBarPopups();
+            BarState.toggleVisible();
+        }
+    }
 
     // ▓▒░ TOP BAR NAVIGATION — SUPER+B
     GlobalShortcut {
@@ -383,6 +455,14 @@ ShellRoot {
         name: "toggle-shortcuts"
         description: "Toggle keybind cheatsheet"
         onPressed: root.toggleCheatsheet()
+    }
+
+    // ▓▒░ NOTEBOOK — SUPER+ALT+N
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "toggle-notebook"
+        description: "Toggle the notebook"
+        onPressed: root.toggleNotebook()
     }
 
     // ▓▒░ NOTIFICATION HISTORY — SUPER+comma and the bar bell
@@ -504,6 +584,10 @@ ShellRoot {
     }
     PlannerWindow {
         id: plannerWindow
+    }
+    NotebookWindow {
+        id: notebookWindow
+        onOpenPlannerRequested: root.openPlanner()
     }
     WorkspaceRename {
         id: workspaceRename

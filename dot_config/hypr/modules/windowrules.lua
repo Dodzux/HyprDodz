@@ -146,6 +146,14 @@ hl.window_rule({
     center = true,
 })
 
+-- The notebook is the planner's sibling: a centered floating window.
+hl.window_rule({
+    name   = "quickshell-notebook",
+    match  = { class = "^org\\.quickshell$", title = "^Notebook$" },
+    float  = true,
+    center = true,
+})
+
 -- Match Kitty, Codex, and Ghostty to the shared 70% glass reference.
 hl.window_rule({
     name   = "terminal-planner-glass",

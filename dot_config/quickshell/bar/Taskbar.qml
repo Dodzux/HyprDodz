@@ -93,6 +93,7 @@ ListView {
 
         // Planner shares the shell's appId, so identify this owned window by its exact title.
         if (id === "org.quickshell" && title === "Planner") return Quickshell.shellDir + "/assets/planner.svg";
+        if (id === "org.quickshell" && title === "Notebook") return Quickshell.shellDir + "/assets/notebook.svg";
         if (id.includes("antigravity")) return "";
 
         for (let i = 0; i < appIdOverrides.length; i++) {

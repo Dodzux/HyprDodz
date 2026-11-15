@@ -65,7 +65,7 @@ apply_wallpaper() {
     if [[ -z "$image" ]]; then
         # Choose when applying, so a rapid request cannot choose the image
         # that the preceding transition has just installed.
-        IFS= read -r -d '' image < <(find "$wallpaper_dir" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' \) ! -path "${current:-/none}" -print0 2>/dev/null | shuf -z -n 1) || :
+        IFS= read -r -d '' image < <(find "$wallpaper_dir" -mindepth 1 -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' \) ! -path '*/.*' ! -path "${current:-/none}" -print0 2>/dev/null | shuf -z -n 1) || :
     fi
     [[ -f "$image" ]] || { wallpaper_error "No other wallpaper found in $wallpaper_dir"; return; }
     if [[ "$image" == "$current" ]]; then

@@ -59,8 +59,8 @@ bind(m .. " + C", hl.dsp.exec_cmd(vars.terminal_editor), { description = "Apps: 
 bind(m .. " + O", hl.dsp.exec_cmd(vars.notingApp), { description = "Apps: Notes (Obsidian)" })
 bind(m .. " + D", hl.dsp.exec_cmd(vars.discord), { description = "Apps: Discord" })
 bind(m .. " + U", hl.dsp.exec_cmd(vars.updater), { description = "System: Update system (pacman -Syu)" })              -- CachyOS system updater
-if vars.codex then
-    bind(m .. " + X", hl.dsp.exec_cmd(vars.codex), { description = "Apps: Codex" })
+if vars.opencode then
+    bind(m .. " + X", hl.dsp.exec_cmd(vars.opencode), { description = "Apps: OpenCode" })
 end
 if vars.thePlan then   -- nil unless installed (modules/variables.lua)
     bind(m .. " + Y", hl.dsp.exec_cmd(vars.thePlan), { description = "Apps: The Plan" })
@@ -80,6 +80,7 @@ bind(m .. " + F",         hl.dsp.global("quickshell:focus-bar"), { description =
 bind(m .. " + Backspace", hl.dsp.global("quickshell:toggle-power-menu"), { description = "Panels: Power menu" })
 bind("Print",             hl.dsp.global("quickshell:toggle-screenshot"), { description = "Capture: Screenshot panel (copy / save)" })
 bind(m .. " + H",         hl.dsp.global("quickshell:toggle-shortcuts"), { description = "Panels: Keybind cheatsheet" })
+bind(m .. " + ALT + N",   hl.dsp.global("quickshell:toggle-notebook"), { description = "Panels: Notebook (notes + plan)" })
 bind(m .. " + comma",     hl.dsp.global("quickshell:toggle-notifications"), { description = "Panels: Notifications + Do Not Disturb" })
 bind(m .. " + grave",     hl.dsp.global("quickshell:toggle-overview"), { description = "Panels: Window overview" })
 
@@ -203,11 +204,12 @@ bind(m .. " + CTRL + up",    hl.dsp.window.move({ direction = "u" }), { descript
 bind(m .. " + CTRL + down",  hl.dsp.window.move({ direction = "d" }), { description = "Windows: Move window down" })
 
 
--- Place the bar directly on the requested screen edge.
+-- Place the bar directly on the requested screen edge or hide.
 bind(m .. " + ALT + up", hl.dsp.global("quickshell:bar-top"), { description = "Panels: Bar at top" })
 bind(m .. " + ALT + down", hl.dsp.global("quickshell:bar-bottom"), { description = "Panels: Bar at bottom" })
 bind(m .. " + ALT + left", hl.dsp.global("quickshell:bar-left"), { description = "Panels: Bar at left" })
 bind(m .. " + ALT + right", hl.dsp.global("quickshell:bar-right"), { description = "Panels: Bar at right" })
+bind(m .. " + ALT + B", hl.dsp.global("quickshell:toggle-bar"), { description = "Panels: Toggle the bar" })
 
 -- ▓▒░ MULTI-MONITOR (matters once a laptop is docked)
 bind(m .. " + CTRL + ALT + left",  hl.dsp.focus({ monitor = "-1" }), { description = "Workspaces: Focus previous monitor" })
@@ -236,11 +238,7 @@ bind(m .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "Sy
 -- These maps are entered only by the active Hyprlock helper and reset on unlock.
 -- Only fixed UI commands are written; password text stays entirely in Hyprlock.
 local function lock_control(command, target)
-    local runtime = os.getenv("XDG_RUNTIME_DIR")
-    if not runtime or runtime == "" then
-        hl.dispatch(hl.dsp.submap("reset"))
-        return
-    end
+    local runtime = os.getenv("XDG_RUNTIME_DIR") or "/run/user/1000"
     local queue = io.open(runtime .. "/hyprlock-buttons/commands", "a")
     if not queue then
         hl.dispatch(hl.dsp.submap("reset"))

@@ -446,6 +446,14 @@ def apply_files(hex_color, token):
         (r'^accent[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent = "#{hex_color}"'),
         (r'^accent2[ \t]*=[ \t]*"#[0-9a-fA-F]{6}"[ \t]*$', f'accent2 = "#{companion(hex_color)}"'),
     ])
+    # Fastfetch uses the same accent pair as Starship: the CachyOS mark and
+    # icon keys take the wallpaper accent, with the companion on the logo's
+    # few secondary dots. If the config is missing, the rewrite is a no-op.
+    rewrite("~/.config/fastfetch/config.jsonc", [
+        (r'("2":\s*")#[0-9a-fA-F]{6}(")', rf'\g<1>#{hex_color}\g<2>'),
+        (r'("3":\s*")#[0-9a-fA-F]{6}(")', rf'\g<1>#{companion(hex_color)}\g<2>'),
+        (r'("keys":\s*")#[0-9a-fA-F]{6}(")', rf'\g<1>#{hex_color}\g<2>'),
+    ])
     rewrite("~/.config/kitty/kitty.conf", [
         # Approved terminal style: tab/link accents follow the same wallpaper.
         (r"^url_color[ \t]+#[0-9a-fA-F]{6}[ \t]*$", f"url_color #{hex_color}"),
