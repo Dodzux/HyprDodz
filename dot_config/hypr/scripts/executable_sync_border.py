@@ -31,6 +31,9 @@ PLATINUM = "e5e5e5"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCENT_STATE = os.path.join(
     os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "hypr", "accent")
+# The companion colour (accent hue + 60°). Shared by starship.toml, kitty and
+# quickshell's upload indicator, so read it from the same place after restarts.
+ACCENT2_STATE = os.path.join(os.path.dirname(ACCENT_STATE), "accent2")
 # Latest-wins. Two wallpaper changes in quick succession start two runs; without
 # this, whichever finished last won — not necessarily the newest. Each run
 # claims TOKEN_FILE on start; the check-and-apply is serialised on LOCK_FILE so
@@ -656,6 +659,7 @@ def update_border(hex_color, token):
 
 def update_quickshell(hex_color, token):
     checked_command(['qs', 'ipc', 'call', 'theme', 'setAccent', hex_color], timeout=1)
+    checked_command(['qs', 'ipc', 'call', 'theme', 'setAccent2', companion(hex_color)], timeout=1)
 
 
 def update_cursor(hex_color, token):
@@ -728,6 +732,7 @@ def apply(hex_color, token=None):
             check_latest(token)
             os.makedirs(os.path.dirname(ACCENT_STATE), exist_ok=True)
             write_atomic(ACCENT_STATE, hex_color + '\n')
+            write_atomic(ACCENT2_STATE, companion(hex_color) + '\n')
             errors = apply_files(hex_color, token)
     except Superseded:
         return

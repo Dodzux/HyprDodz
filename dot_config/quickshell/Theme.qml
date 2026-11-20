@@ -23,6 +23,10 @@ Singleton {
     // and every change rebuilt the whole shell. IPC changes one property.
     // The literal below is only the fallback before the state file is read.
     property color accent: "#e5e5e5"
+    // Companion accent: the accent's hue turned 60°, the same second colour
+    // sync_border.py writes to starship.toml. Network upload uses it so both
+    // traffic directions stay readable against each other.
+    property color accent2: "#a5a5a5"
     readonly property color success: "#81c995"      // Matches @success_color
     readonly property color error: "#f28b82"        // Matches @error_color
 
@@ -64,15 +68,26 @@ Singleton {
         if (/^[0-9a-fA-F]{6}$/.test(h)) theme.accent = "#" + h;
     }
 
-    // Survives quickshell restarts: sync_border.py also writes the accent here,
-    // and it is read once at startup (no watch — IPC covers live changes).
+    function applyAccent2(hex) {
+        var h = String(hex).trim().replace(/^#/, "");
+        if (/^[0-9a-fA-F]{6}$/.test(h)) theme.accent2 = "#" + h;
+    }
+
+    // Survives quickshell restarts: sync_border.py also writes both accents
+    // here, and they are read once at startup (no watch — IPC covers live changes).
     FileView {
         path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hypr/accent"
         onLoaded: theme.applyAccent(text())
     }
 
+    FileView {
+        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/hypr/accent2"
+        onLoaded: theme.applyAccent2(text())
+    }
+
     IpcHandler {
         target: "theme"
         function setAccent(hex: string): void { theme.applyAccent(hex); }
+        function setAccent2(hex: string): void { theme.applyAccent2(hex); }
     }
 }

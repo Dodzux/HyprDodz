@@ -31,8 +31,11 @@ PanelWindow {
     onVisibleChanged: { navigationKeys = ({}); keyboardSelection = false; }
     property alias queryText: searchInput.text
     property var shortcutHints: ({})
+    // The shell closes other overlays on this so launcher windows never stack.
+    signal launcherShown()
     function showLauncher() {
         searchInput.text = "";
+        launcherShown();
         visible = true;
         hintsProc.running = true;
     }
@@ -114,18 +117,25 @@ PanelWindow {
         onClicked: launcherWindow.visible = false
     }
 
-    // ▓▒░ FILTERED APP LIST
+    // ▓▒░ FILTERED APP LIST — alphabetical, so every entry has a fixed place.
+    // DesktopEntries returns scan order, which is neither stable nor readable;
+    // sort a copy so the model's own array is never mutated.
     property var filteredApps: {
         var q = searchInput.text.toLowerCase().trim()
         var all = DesktopEntries.applications.values
-        if (!q) return all
-        return all.filter(function(app) {
+        var apps = q ? all.filter(function(app) {
             return app.name.toLowerCase().includes(q)
                 || (app.genericName && app.genericName.toLowerCase().includes(q))
                 || (app.comment && app.comment.toLowerCase().includes(q))
                 || (app.id && app.id.toLowerCase().includes(q))
                 || (app.keywords && app.keywords.join(" ").toLowerCase().includes(q))
+        }) : all.slice()
+        apps.sort(function(a, b) {
+            var an = (a.name || a.id || "").toLowerCase()
+            var bn = (b.name || b.id || "").toLowerCase()
+            return an < bn ? -1 : an > bn ? 1 : 0
         })
+        return apps
     }
 
     // ▓▒░ CENTERED PANEL CARD

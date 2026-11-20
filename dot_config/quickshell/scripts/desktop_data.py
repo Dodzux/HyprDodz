@@ -38,18 +38,60 @@ def hypr_json(kind):
     return json.loads(result.stdout)
 
 
+def desktop_entry_ids():
+    """Map lowercased desktop names and ids to the id Quickshell reports.
+
+    Binds describe apps by display name ("Brave Origin", "Strix Core"), while
+    the launcher keys its hint badges by desktop id ("brave-origin",
+    "io.github.hyprdodz.StrixCore"). Reading the entries bridges both, so the
+    hint does not disappear when the two spellings differ.
+    """
+    roots = [HOME / ".local/share/applications"]
+    data_dirs = os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share"
+    roots += [Path(directory) / "applications" for directory in data_dirs.split(":") if directory]
+    by_name, by_id = {}, {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in root.glob("*.desktop"):
+            entry_id = path.stem
+            by_id[entry_id.lower()] = entry_id
+            try:
+                text = path.read_text(errors="replace")
+            except OSError:
+                continue
+            for line in text.splitlines():
+                if line.startswith("Name=") and not line.startswith("Name["):
+                    by_name[line[5:].strip().lower()] = entry_id
+                    break
+    return by_name, by_id
+
+
 def shortcuts():
-    aliases = {"brave": "brave-browser", "neovim": "nvim", "herdr": "herdr-app"}
+    aliases = {"neovim": "nvim", "herdr": "herdr-app"}
+    by_name, by_id = desktop_entry_ids()
     result = {}
     for bind in hypr_json("binds"):
         description = bind.get("description", "")
+        # Strix Core installs its own managed bindings (M5 = Open Strix Core),
+        # so their descriptions never start with "Apps: ". Surface the M5 key
+        # on the app's launcher row, using the event Strix actually bound.
+        if description.startswith("Strix Core: "):
+            if description[12:].strip() == "Open Strix Core":
+                event = bind.get("key", "")
+                result["io.github.hyprdodz.StrixCore"] = "M5" if event == "XF86Launch1" else event.removeprefix("XF86")
+            continue
         if not description.startswith("Apps: "):
             continue
         title = description[6:]
         match = re.search(r"\(([^)]+)\)$", title)
         name = (match[1] if match else title).lower()
         modifiers = [label for bit, label in [(64, "Super"), (4, "Ctrl"), (8, "Alt"), (1, "Shift")] if bind["modmask"] & bit]
-        result[aliases.get(name, name)] = "+".join(modifiers + [bind["key"].upper()])
+        entry_id = (aliases.get(name)
+                    or by_name.get(name)
+                    or by_id.get(name.replace(" ", "-"))
+                    or name.replace(" ", "-"))
+        result[entry_id] = "+".join(modifiers + [bind["key"].upper()])
     return result
 
 
