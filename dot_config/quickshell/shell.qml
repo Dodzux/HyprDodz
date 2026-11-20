@@ -291,6 +291,24 @@ ShellRoot {
     }
 
     /**
+     * Hides every singleton overlay except `keep`. Each panel is its own
+     * layer-shell window, so without this the launcher, notebook, planner,
+     * wallpaper selector and friends can end up stacked on top of each other.
+     * @param {var} keep Panel to leave open (the one being shown).
+     */
+    function hideOverlays(keep) {
+        var panels = [appLauncher, powerMenuPanel, calendarPanel, tasksPanel,
+                      notificationCenter, networkPanel, trayMenu, plannerWindow,
+                      notebookWindow, wallpaperSelectorPanel, overviewPanel,
+                      cheatsheetPanel];
+        for (var panel of panels)
+            if (panel && panel !== keep)
+                panel.visible = false;
+        if (keep !== overviewPanel)
+            overviewPanel.dismiss();
+    }
+
+    /**
      * Shows a singleton overlay panel on the focused screen, or hides it if
      * already visible. Shared by every toggleX signal below.
      * @param {var} panel Panel instance with `visible` and `screen` properties.
@@ -300,6 +318,7 @@ ShellRoot {
             panel.visible = false;
             return;
         }
+        hideOverlays(panel);
         var scr = getFocusedScreen();
         if (scr)
             panel.screen = scr;
@@ -307,19 +326,15 @@ ShellRoot {
     }
 
     onTogglePowerMenu: togglePanel(powerMenuPanel)
-    onToggleCalendar: {
-        tasksPanel.visible = false;
-        togglePanel(calendarPanel);
+    onToggleCalendar: togglePanel(calendarPanel)
+    onToggleWallpaperSelector: {
+        if (!wallpaperSelectorPanel.visible)
+            hideOverlays(wallpaperSelectorPanel);
+        wallpaperSelectorPanel.toggle(getFocusedScreen());
     }
-    onToggleWallpaperSelector: wallpaperSelectorPanel.toggle(getFocusedScreen())
-    onToggleTasks: {
-        notificationCenter.visible = false;
-        calendarPanel.visible = false;
-        togglePanel(tasksPanel);
-    }
+    onToggleTasks: togglePanel(tasksPanel)
     function openPlanner() {
-        tasksPanel.visible = false;
-        notebookWindow.visible = false;
+        hideOverlays(plannerWindow);
         plannerWindow.open(getFocusedScreen());
     }
     function toggleNotebook() {
@@ -327,9 +342,7 @@ ShellRoot {
             notebookWindow.visible = false;
             return;
         }
-        tasksPanel.visible = false;
-        calendarPanel.visible = false;
-        plannerWindow.visible = false;
+        hideOverlays(notebookWindow);
         notebookWindow.open(getFocusedScreen());
     }
     function renameWorkspace(id) {
@@ -549,7 +562,10 @@ ShellRoot {
 
     // ▓▒░ APP LAUNCHER — SUPER+A (GlobalShortcut registered inside AppLauncher.qml)
     // Replaces: rofi -show drun
-    AppLauncher {}
+    AppLauncher {
+        id: appLauncher
+        onLauncherShown: root.hideOverlays(appLauncher)
+    }
     // ▓▒░ SCREENSHOT PANEL — Print key (GlobalShortcut registered inside ScreenshotPanel.qml)
     // Replaces: ~/.config/rofi/screenshot.sh
     ScreenshotPanel {

@@ -40,6 +40,9 @@ ListView {
     property var appIdOverrides: [
         { key: "org.yazi.fm", icon: "yazi" },
         { key: "cachy", icon: Quickshell.env("HOME") + "/.config/quickshell/assets/pacman.svg" },
+        // Base icon has the visor piece removed; StrixEye paints it with the
+        // live accent so the window icon matches the pacman treatment.
+        { key: "strix", icon: Quickshell.env("HOME") + "/.config/quickshell/assets/strix-core.svg" },
     ]
 
     // Terminal emulators used on this system. Their toplevel appId never
@@ -180,6 +183,13 @@ ListView {
                 PacmanPellets {
                     anchors.fill: parent
                     visible: (modelData ? modelData.appId || "" : "").toLowerCase().includes("cachy")
+                             && parent.status === Image.Ready
+                }
+
+                // Strix Core's visor follows the live theme accent too.
+                StrixEye {
+                    anchors.fill: parent
+                    visible: (modelData ? modelData.appId || "" : "").toLowerCase().includes("strix")
                              && parent.status === Image.Ready
                 }
 
