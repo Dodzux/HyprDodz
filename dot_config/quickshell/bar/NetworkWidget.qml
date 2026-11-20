@@ -79,8 +79,8 @@ BarItem {
 
             Repeater {
                 model: [
-                    { glyph: "󰇚", active: widget.downActive, value: SysMonitorService.downloadSpeed },
-                    { glyph: "󰕒", active: widget.upActive, value: SysMonitorService.uploadSpeed }
+                    { glyph: "󰇚", active: widget.downActive, value: SysMonitorService.downloadSpeed, accent: Theme.accent },
+                    { glyph: "󰕒", active: widget.upActive, value: SysMonitorService.uploadSpeed, accent: Theme.accent2 }
                 ]
 
                 delegate: Row {
@@ -92,7 +92,7 @@ BarItem {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: speed.modelData.glyph
-                        color: speed.modelData.active ? Theme.accent : Theme.subtext0
+                        color: speed.modelData.active ? speed.modelData.accent : Theme.subtext0
                         font.family: Theme.fontMain
                         font.pixelSize: 13
                         Behavior on color { ColorAnimation { duration: 200 } }
